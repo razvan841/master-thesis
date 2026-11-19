@@ -1,0 +1,1726 @@
+% ---------------------------------------------------------------------------
+% Background: origins of congestion control and evaluation metrics
+% ---------------------------------------------------------------------------
+
+@techreport{rfc793,
+  author      = {Jon Postel},
+  title       = {{Transmission Control Protocol}},
+  type        = {RFC},
+  number      = {793},
+  institution = {IETF},
+  year        = {1981},
+  month       = sep,
+  doi         = {10.17487/RFC0793},
+  note        = {Obsoleted by RFC 9293}
+}
+
+@techreport{rfc896,
+  author      = {John Nagle},
+  title       = {{Congestion Control in IP/TCP Internetworks}},
+  type        = {RFC},
+  number      = {896},
+  institution = {IETF},
+  year        = {1984},
+  month       = jan,
+  doi         = {10.17487/RFC0896}
+}
+
+@article{karn1987improving,
+  author  = {Phil Karn and Craig Partridge},
+  title   = {Improving Round-Trip Time Estimates in Reliable Transport Protocols},
+  journal = {ACM SIGCOMM Computer Communication Review},
+  volume  = {17},
+  number  = {5},
+  pages   = {2--7},
+  year    = {1987},
+  doi     = {10.1145/55483.55484}
+}
+
+@inproceedings{jacobson1988congestion,
+  author    = {Van Jacobson},
+  title     = {Congestion Avoidance and Control},
+  booktitle = {Proceedings of the ACM SIGCOMM Symposium on Communications
+               Architectures and Protocols},
+  pages     = {314--329},
+  year      = {1988},
+  doi       = {10.1145/52324.52356}
+}
+
+@techreport{jain1984quantitative,
+  author      = {Raj Jain and Dah-Ming Chiu and W. Hawe},
+  title       = {A Quantitative Measure of Fairness and Discrimination for
+                 Resource Allocation in Shared Computer Systems},
+  institution = {Digital Equipment Corporation},
+  type        = {Research Report},
+  number      = {DEC-TR-301},
+  year        = {1984},
+  month       = sep,
+  eprint      = {cs/9809099},
+  archiveprefix = {arXiv},
+  url         = {https://arxiv.org/abs/cs/9809099}
+}
+
+@article{chiu1989analysis,
+  author  = {Dah-Ming Chiu and Raj Jain},
+  title   = {Analysis of the Increase and Decrease Algorithms for Congestion
+             Avoidance in Computer Networks},
+  journal = {Computer Networks and ISDN Systems},
+  volume  = {17},
+  number  = {1},
+  pages   = {1--14},
+  year    = {1989},
+  doi     = {10.1016/0169-7552(89)90019-6}
+}
+
+@article{fall1996simulation,
+  author  = {Kevin Fall and Sally Floyd},
+  title   = {Simulation-based Comparisons of {Tahoe}, {Reno} and {SACK} {TCP}},
+  journal = {ACM SIGCOMM Computer Communication Review},
+  volume  = {26},
+  number  = {3},
+  pages   = {5--21},
+  year    = {1996},
+  doi     = {10.1145/235160.235162}
+}
+
+@article{floyd1999promoting,
+  author  = {Sally Floyd and Kevin Fall},
+  title   = {Promoting the Use of End-to-End Congestion Control in the Internet},
+  journal = {IEEE/ACM Transactions on Networking},
+  volume  = {7},
+  number  = {4},
+  pages   = {458--472},
+  year    = {1999},
+  doi     = {10.1109/90.793002}
+}
+
+@article{dukkipati2006why,
+  author  = {Nandita Dukkipati and Nick McKeown},
+  title   = {Why Flow-Completion Time is the Right Metric for Congestion Control},
+  journal = {ACM SIGCOMM Computer Communication Review},
+  volume  = {36},
+  number  = {1},
+  pages   = {59--62},
+  year    = {2006},
+  doi     = {10.1145/1111322.1111336}
+}
+
+@inproceedings{ware2019beyond,
+  author    = {Ranysha Ware and Matthew K. Mukerjee and Srinivasan Seshan and
+               Justine Sherry},
+  title     = {Beyond {Jain's} Fairness Index: Setting the Bar for the Deployment
+               of Congestion Control Algorithms},
+  booktitle = {Proceedings of the 18th ACM Workshop on Hot Topics in Networks
+               (HotNets '19)},
+  pages     = {17--24},
+  year      = {2019},
+  doi       = {10.1145/3365609.3365855}
+}
+
+@techreport{rfc6298,
+  author      = {Vern Paxson and Mark Allman and Jerry Chu and Matt Sargent},
+  title       = {{Computing TCP's Retransmission Timer}},
+  type        = {RFC},
+  number      = {6298},
+  institution = {IETF},
+  year        = {2011},
+  month       = jun,
+  doi         = {10.17487/RFC6298}
+}
+
+@techreport{rfc9743,
+  author      = {Martin Duke and Gorry Fairhurst},
+  title       = {{Specifying New Congestion Control Algorithms}},
+  type        = {RFC},
+  number      = {9743},
+  institution = {IETF},
+  year        = {2025},
+  month       = mar,
+  doi         = {10.17487/RFC9743},
+  note        = {BCP 133}
+}
+
+@techreport{rfc2914,
+  author      = {Sally Floyd},
+  title       = {{Congestion Control Principles}},
+  type        = {RFC},
+  number      = {2914},
+  institution = {IETF},
+  year        = {2000},
+  month       = sep,
+  doi         = {10.17487/RFC2914},
+  note        = {BCP 41}
+}
+
+@article{afanasyev2010host,
+  author  = {Alexander Afanasyev and Neil Tilley and Peter Reiher and Leonard Kleinrock},
+  title   = {Host-to-Host Congestion Control for {TCP}},
+  journal = {IEEE Communications Surveys \& Tutorials},
+  volume  = {12},
+  number  = {3},
+  pages   = {304--342},
+  year    = {2010},
+  doi     = {10.1109/SURV.2010.042710.00114}
+}
+
+@book{peterson2022computer,
+  author    = {Larry L. Peterson and Bruce S. Davie},
+  title     = {Computer Networks: A Systems Approach},
+  edition   = {Sixth},
+  publisher = {Morgan Kaufmann},
+  address   = {Cambridge, MA},
+  year      = {2022},
+  isbn      = {978-0-12-818200-0},
+  url       = {https://book.systemsapproach.org/}
+}
+
+% ---------------------------------------------------------------------------
+% Background: CUBIC
+% ---------------------------------------------------------------------------
+
+@article{ha2008cubic,
+  author  = {Sangtae Ha and Injong Rhee and Lisong Xu},
+  title   = {{CUBIC}: A New {TCP}-Friendly High-Speed {TCP} Variant},
+  journal = {ACM SIGOPS Operating Systems Review},
+  volume  = {42},
+  number  = {5},
+  pages   = {64--74},
+  year    = {2008},
+  doi     = {10.1145/1400097.1400105}
+}
+
+@techreport{rfc9438,
+  author      = {Lisong Xu and Sangtae Ha and Injong Rhee and Vidhi Goel and
+                 Lars Eggert},
+  title       = {{CUBIC for Fast and Long-Distance Networks}},
+  type        = {RFC},
+  number      = {9438},
+  institution = {IETF},
+  year        = {2023},
+  month       = aug,
+  doi         = {10.17487/RFC9438}
+}
+
+@inproceedings{flach2013reducing,
+  author    = {Tobias Flach and Nandita Dukkipati and Andreas Terzis and Barath Raghavan
+               and Neal Cardwell and Yuchung Cheng and Ankur Jain and Shuai Hao and
+               Ethan Katz-Bassett and Ramesh Govindan},
+  title     = {Reducing Web Latency: The Virtue of Gentle Aggression},
+  booktitle = {Proceedings of the ACM SIGCOMM 2013 Conference},
+  pages     = {159--170},
+  year      = {2013},
+  doi       = {10.1145/24860f01.2486014}
+}
+
+@article{ha2011taming,
+  author  = {Sangtae Ha and Injong Rhee},
+  title   = {Taming the Elephants: New {TCP} Slow Start},
+  journal = {Computer Networks},
+  volume  = {55},
+  number  = {9},
+  pages   = {2092--2110},
+  year    = {2011},
+  doi     = {10.1016/j.comnet.2011.01.014}
+}
+
+@inproceedings{ha2008hystart,
+  author    = {Sangtae Ha and Injong Rhee},
+  title     = {Hybrid Slow Start for High-Bandwidth and Long-Distance Networks},
+  booktitle = {Proceedings of the 6th International Workshop on Protocols for Fast
+               Long-Distance Networks (PFLDnet)},
+  year      = {2008},
+  url       = {https://web.archive.org/web/20100709181417/http://netsrv.csc.ncsu.edu/export/hybridstart_pfldnet08.pdf}
+}
+
+@misc{hemminger2006cubic,
+  author       = {Stephen Hemminger},
+  title        = {{[TCP]}: Make {CUBIC} the Default},
+  howpublished = {Linux kernel commit 597811ec167f, first released in Linux 2.6.19},
+  year         = {2006},
+  month        = sep,
+  url          = {https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=597811ec167fa01c926a0957a91d9e39baa30e64},
+  note         = {Committed 25 September 2006}
+}
+
+@misc{linux2026source,
+  author       = {{The Linux Kernel Developers}},
+  title        = {Linux Kernel Source: {TCP} Congestion Control
+                  (\texttt{net/ipv4/Kconfig}, \texttt{tcp\_cong.c}, \texttt{tcp\_cubic.c})},
+  howpublished = {Git repository, mainline branch},
+  year         = {2026},
+  url          = {https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/net/ipv4},
+  note         = {Accessed 11 November 2026}
+}
+
+% ---------------------------------------------------------------------------
+% Background: TCP Vegas
+% ---------------------------------------------------------------------------
+
+@inproceedings{brakmo1994vegas,
+  author    = {Lawrence S. Brakmo and Sean W. O'Malley and Larry L. Peterson},
+  title     = {{TCP} Vegas: New Techniques for Congestion Detection and Avoidance},
+  booktitle = {Proceedings of the ACM SIGCOMM '94 Conference},
+  pages     = {24--35},
+  year      = {1994},
+  doi       = {10.1145/190314.190317}
+}
+
+@article{brakmo1995vegas,
+  author  = {Lawrence S. Brakmo and Larry L. Peterson},
+  title   = {{TCP} Vegas: End to End Congestion Avoidance on a Global {Internet}},
+  journal = {IEEE Journal on Selected Areas in Communications},
+  volume  = {13},
+  number  = {8},
+  pages   = {1465--1480},
+  year    = {1995},
+  doi     = {10.1109/49.464716}
+}
+
+@inproceedings{mo1999analysis,
+  author    = {Jeonghoon Mo and Richard J. La and Venkat Anantharam and Jean Walrand},
+  title     = {Analysis and Comparison of {TCP} {Reno} and {Vegas}},
+  booktitle = {Proceedings of IEEE INFOCOM '99},
+  volume    = {3},
+  pages     = {1556--1563},
+  year      = {1999},
+  doi       = {10.1109/INFCOM.1999.752178}
+}
+
+@inproceedings{tan2006compound,
+  author    = {Kun Tan and Jingmin Song and Qian Zhang and Murari Sridharan},
+  title     = {A Compound {TCP} Approach for High-Speed and Long Distance Networks},
+  booktitle = {Proceedings of IEEE INFOCOM 2006},
+  pages     = {1--12},
+  year      = {2006},
+  doi       = {10.1109/INFOCOM.2006.188}
+}
+
+% ---------------------------------------------------------------------------
+% Background: the initial window
+% ---------------------------------------------------------------------------
+
+@techreport{rfc2001,
+  author      = {W. Richard Stevens},
+  title       = {{TCP Slow Start, Congestion Avoidance, Fast Retransmit, and Fast
+                 Recovery Algorithms}},
+  type        = {RFC},
+  number      = {2001},
+  institution = {IETF},
+  year        = {1997},
+  month       = jan,
+  doi         = {10.17487/RFC2001}
+}
+
+@techreport{rfc2414,
+  author      = {Mark Allman and Sally Floyd and Craig Partridge},
+  title       = {{Increasing TCP's Initial Window}},
+  type        = {RFC},
+  number      = {2414},
+  institution = {IETF},
+  year        = {1998},
+  month       = sep,
+  doi         = {10.17487/RFC2414},
+  note        = {Experimental}
+}
+
+@techreport{rfc2581,
+  author      = {Mark Allman and Vern Paxson and W. Richard Stevens},
+  title       = {{TCP Congestion Control}},
+  type        = {RFC},
+  number      = {2581},
+  institution = {IETF},
+  year        = {1999},
+  month       = apr,
+  doi         = {10.17487/RFC2581}
+}
+
+@techreport{rfc3390,
+  author      = {Mark Allman and Sally Floyd and Craig Partridge},
+  title       = {{Increasing TCP's Initial Window}},
+  type        = {RFC},
+  number      = {3390},
+  institution = {IETF},
+  year        = {2002},
+  month       = oct,
+  doi         = {10.17487/RFC3390}
+}
+
+@techreport{rfc6928,
+  author      = {Jerry Chu and Nandita Dukkipati and Yuchung Cheng and Matt Mathis},
+  title       = {{Increasing TCP's Initial Window}},
+  type        = {RFC},
+  number      = {6928},
+  institution = {IETF},
+  year        = {2013},
+  month       = apr,
+  doi         = {10.17487/RFC6928},
+  note        = {Experimental}
+}
+
+@article{medina2005measuring,
+  author  = {Alberto Medina and Mark Allman and Sally Floyd},
+  title   = {Measuring the Evolution of Transport Protocols in the {Internet}},
+  journal = {ACM SIGCOMM Computer Communication Review},
+  volume  = {35},
+  number  = {2},
+  pages   = {37--52},
+  year    = {2005},
+  doi     = {10.1145/1064413.1064418}
+}
+
+@inproceedings{ruth2017large,
+  author    = {Jan R{\"u}th and Christian Bormann and Oliver Hohlfeld},
+  title     = {Large-Scale Scanning of {TCP}'s Initial Window},
+  booktitle = {Proceedings of the 2017 Internet Measurement Conference (IMC '17)},
+  pages     = {304--310},
+  year      = {2017},
+  doi       = {10.1145/3131365.3131370}
+}
+
+@article{ruth2019iw,
+  author  = {Jan R{\"u}th and Ike Kunze and Oliver Hohlfeld},
+  title   = {{TCP}'s Initial Window---Deployment in the Wild and Its Impact on
+             Performance},
+  journal = {IEEE Transactions on Network and Service Management},
+  volume  = {16},
+  number  = {2},
+  pages   = {389--402},
+  year    = {2019},
+  doi     = {10.1109/TNSM.2019.2896335}
+}
+
+% ---------------------------------------------------------------------------
+% Background: flow sizes in Internet traffic
+% ---------------------------------------------------------------------------
+
+@inproceedings{cardwell2000modeling,
+  author    = {Neal Cardwell and Stefan Savage and Thomas Anderson},
+  title     = {Modeling {TCP} Latency},
+  booktitle = {Proceedings of IEEE INFOCOM 2000},
+  volume    = {3},
+  pages     = {1742--1751},
+  year      = {2000},
+  doi       = {10.1109/INFCOM.2000.832574}
+}
+
+@inproceedings{zhang2002characteristics,
+  author    = {Yin Zhang and Lee Breslau and Vern Paxson and Scott Shenker},
+  title     = {On the Characteristics and Origins of Internet Flow Rates},
+  booktitle = {Proceedings of ACM SIGCOMM 2002},
+  pages     = {309--322},
+  year      = {2002},
+  doi       = {10.1145/633025.633055}
+}
+
+@article{brownlee2002understanding,
+  author  = {Nevil Brownlee and K. C. Claffy},
+  title   = {Understanding {Internet} Traffic Streams: Dragonflies and Tortoises},
+  journal = {IEEE Communications Magazine},
+  volume  = {40},
+  number  = {10},
+  pages   = {110--117},
+  year    = {2002},
+  doi     = {10.1109/MCOM.2002.1039865}
+}
+
+@article{dukkipati2010argument,
+  author  = {Nandita Dukkipati and Tiziana Refice and Yuchung Cheng and Jerry Chu
+             and Tom Herbert and Amit Agarwal and Arvind Jain and Natalia Sutin},
+  title   = {An Argument for Increasing {TCP's} Initial Congestion Window},
+  journal = {ACM SIGCOMM Computer Communication Review},
+  volume  = {40},
+  number  = {3},
+  pages   = {26--33},
+  year    = {2010},
+  doi     = {10.1145/1823844.1823848}
+}
+
+@inproceedings{bauer2021evolution,
+  author    = {Simon Bauer and Benedikt Jaeger and Fabian Helfert and Philippe Barias
+               and Georg Carle},
+  title     = {On the Evolution of {Internet} Flow Characteristics},
+  booktitle = {Proceedings of the Applied Networking Research Workshop (ANRW '21)},
+  pages     = {29--35},
+  year      = {2021},
+  doi       = {10.1145/3472305.3472321}
+}
+
+@article{jurkiewicz2021flow,
+  author  = {Piotr Jurkiewicz and Grzegorz Rzym and Piotr Bory{\l}o},
+  title   = {Flow Length and Size Distributions in Campus {Internet} Traffic},
+  journal = {Computer Communications},
+  volume  = {167},
+  pages   = {15--30},
+  year    = {2021},
+  doi     = {10.1016/j.comcom.2020.12.016}
+}
+
+@article{luxemburk2023cesnet,
+  author  = {Jan Luxemburk and Karel Hynek and Tom{\'a}{\v{s}} {\v{C}}ejka and
+             Andrej Luka{\v{c}}ovi{\v{c}} and Pavel {\v{S}}i{\v{s}}ka},
+  title   = {{CESNET-QUIC22}: A Large One-Month {QUIC} Network Traffic Dataset
+             from Backbone Lines},
+  journal = {Data in Brief},
+  volume  = {46},
+  pages   = {108888},
+  year    = {2023},
+  doi     = {10.1016/j.dib.2023.108888}
+}
+
+@misc{cloudflare2025connections,
+  author       = {Suleman Ahmad and Peter Wu},
+  title        = {Measuring Characteristics of {TCP} Connections at {Internet} Scale},
+  howpublished = {Cloudflare Blog},
+  year         = {2025},
+  month        = oct,
+  url          = {https://blog.cloudflare.com/measuring-network-connections-at-scale/},
+  note         = {Published 29 October 2025}
+}
+
+@misc{httparchive2025pageweight,
+  author       = {Jamie Indigo and Richard Barret},
+  title        = {Page Weight},
+  howpublished = {The Web Almanac 2025, HTTP Archive},
+  year         = {2026},
+  month        = jan,
+  url          = {https://almanac.httparchive.org/en/2025/page-weight},
+  note         = {Published 15 January 2026}
+}
+
+@inproceedings{kohavi2014seven,
+  author    = {Ron Kohavi and Alex Deng and Roger Longbotham and Ya Xu},
+  title     = {Seven Rules of Thumb for Web Site Experimenters},
+  booktitle = {Proceedings of the 20th ACM SIGKDD International Conference on Knowledge
+               Discovery and Data Mining (KDD '14)},
+  pages     = {1857--1866},
+  year      = {2014},
+  doi       = {10.1145/2623330.2623341}
+}
+
+@misc{brutlag2009speed,
+  author       = {Jake Brutlag},
+  title        = {Speed Matters for {Google} Web Search},
+  howpublished = {Google, Inc.},
+  year         = {2009},
+  month        = jun,
+  url          = {https://services.google.com/fh/files/blogs/google_delayexp.pdf},
+  note         = {Published 22 June 2009}
+}
+
+% ---------------------------------------------------------------------------
+% Background: QUIC
+% ---------------------------------------------------------------------------
+
+@inproceedings{langley2017quic,
+  author    = {Adam Langley and Alistair Riddoch and Alyssa Wilk and Antonio Vicente
+               and Charles Krasic and Dan Zhang and Fan Yang and Fedor Kouranov and
+               Ian Swett and Janardhan Iyengar and Jeff Bailey and Jeremy Dorfman and
+               Jim Roskind and Joanna Kulik and Patrik Westin and Raman Tenneti and
+               Robbie Shade and Ryan Hamilton and Victor Vasiliev and Wan-Teh Chang
+               and Zhongyi Shi},
+  title     = {The {QUIC} Transport Protocol: Design and {Internet}-Scale Deployment},
+  booktitle = {Proceedings of ACM SIGCOMM 2017},
+  pages     = {183--196},
+  year      = {2017},
+  doi       = {10.1145/3098822.3098842}
+}
+
+@misc{cloudflare2025radar,
+  author       = {{Cloudflare}},
+  title        = {The 2025 {Cloudflare Radar} Year in Review},
+  howpublished = {Cloudflare Blog},
+  year         = {2025},
+  month        = dec,
+  url          = {https://blog.cloudflare.com/radar-2025-year-in-review/},
+  note         = {Published 15 December 2025}
+}
+
+@techreport{rfc9000,
+  author      = {Jana Iyengar and Martin Thomson},
+  title       = {{QUIC: A UDP-Based Multiplexed and Secure Transport}},
+  type        = {RFC},
+  number      = {9000},
+  institution = {IETF},
+  year        = {2021},
+  month       = may,
+  doi         = {10.17487/RFC9000}
+}
+
+@techreport{rfc9001,
+  author      = {Martin Thomson and Sean Turner},
+  title       = {{Using TLS to Secure QUIC}},
+  type        = {RFC},
+  number      = {9001},
+  institution = {IETF},
+  year        = {2021},
+  month       = may,
+  doi         = {10.17487/RFC9001}
+}
+
+@techreport{rfc9002,
+  author      = {Jana Iyengar and Ian Swett},
+  title       = {{QUIC Loss Detection and Congestion Control}},
+  type        = {RFC},
+  number      = {9002},
+  institution = {IETF},
+  year        = {2021},
+  month       = may,
+  doi         = {10.17487/RFC9002}
+}
+
+@techreport{rfc9114,
+  author      = {Mike Bishop},
+  title       = {{HTTP/3}},
+  type        = {RFC},
+  number      = {9114},
+  institution = {IETF},
+  year        = {2022},
+  month       = jun,
+  doi         = {10.17487/RFC9114}
+}
+
+@techreport{rfc8446,
+  author      = {Eric Rescorla},
+  title       = {{The Transport Layer Security (TLS) Protocol Version 1.3}},
+  type        = {RFC},
+  number      = {8446},
+  institution = {IETF},
+  year        = {2018},
+  month       = aug,
+  doi         = {10.17487/RFC8446}
+}
+
+@techreport{rfc7413,
+  author      = {Yuchung Cheng and Jerry Chu and Sivasankar Radhakrishnan and Arvind Jain},
+  title       = {{TCP Fast Open}},
+  type        = {RFC},
+  number      = {7413},
+  institution = {IETF},
+  year        = {2014},
+  month       = dec,
+  doi         = {10.17487/RFC7413},
+  note        = {Experimental}
+}
+
+@techreport{rfc9040,
+  author      = {Joe Touch and Michael Welzl and Safiqul Islam},
+  title       = {{TCP Control Block Interdependence}},
+  type        = {RFC},
+  number      = {9040},
+  institution = {IETF},
+  year        = {2021},
+  month       = jul,
+  doi         = {10.17487/RFC9040}
+}
+
+@techreport{rfc9959,
+  author      = {Nicolas Kuhn and Emile Stephan and Gorry Fairhurst and Raffaello Secchi
+                 and Christian Huitema},
+  title       = {{Careful Resume: Convergence of Congestion Control from Retained
+                 State}},
+  type        = {RFC},
+  number      = {9959},
+  institution = {IETF},
+  year        = {2026},
+  month       = may,
+  doi         = {10.17487/RFC9959}
+}
+
+@techreport{rfc5681,
+  author      = {Mark Allman and Vern Paxson and Ethan Blanton},
+  title       = {{TCP Congestion Control}},
+  type        = {RFC},
+  number      = {5681},
+  institution = {IETF},
+  year        = {2009},
+  month       = sep,
+  doi         = {10.17487/RFC5681}
+}
+
+@techreport{rfc9406,
+  author      = {Praveen Balasubramanian and Yi Huang and Matt Olson},
+  title       = {{HyStart++: Modified Slow Start for TCP}},
+  type        = {RFC},
+  number      = {9406},
+  institution = {IETF},
+  year        = {2023},
+  month       = may,
+  doi         = {10.17487/RFC9406}
+}
+
+@techreport{rfc2018,
+  author      = {Matt Mathis and Jamshid Mahdavi and Sally Floyd and Allyn Romanow},
+  title       = {{TCP Selective Acknowledgment Options}},
+  type        = {RFC},
+  number      = {2018},
+  institution = {IETF},
+  year        = {1996},
+  month       = oct,
+  doi         = {10.17487/RFC2018}
+}
+
+@techreport{rfc3168,
+  author      = {K. K. Ramakrishnan and Sally Floyd and David L. Black},
+  title       = {{The Addition of Explicit Congestion Notification (ECN) to IP}},
+  type        = {RFC},
+  number      = {3168},
+  institution = {IETF},
+  year        = {2001},
+  month       = sep,
+  doi         = {10.17487/RFC3168}
+}
+
+@techreport{rfc9768,
+  author      = {Bob Briscoe and Mirja K{\"u}hlewind and Richard Scheffenegger},
+  title       = {{More Accurate Explicit Congestion Notification (AccECN) Feedback in
+                 TCP}},
+  type        = {RFC},
+  number      = {9768},
+  institution = {IETF},
+  year        = {2026},
+  month       = apr,
+  doi         = {10.17487/RFC9768}
+}
+
+@techreport{rfc9312,
+  author      = {Mirja K{\"u}hlewind and Brian Trammell},
+  title       = {{Manageability of the QUIC Transport Protocol}},
+  type        = {RFC},
+  number      = {9312},
+  institution = {IETF},
+  year        = {2022},
+  month       = sep,
+  doi         = {10.17487/RFC9312}
+}
+
+@techreport{rfc9221,
+  author      = {Tommy Pauly and Eric Kinnear and David Schinazi},
+  title       = {{An Unreliable Datagram Extension to QUIC}},
+  type        = {RFC},
+  number      = {9221},
+  institution = {IETF},
+  year        = {2022},
+  month       = mar,
+  doi         = {10.17487/RFC9221}
+}
+
+@inproceedings{honda2011extend,
+  author    = {Michio Honda and Yoshifumi Nishida and Costin Raiciu and Adam Greenhalgh
+               and Mark Handley and Hideyuki Tokuda},
+  title     = {Is It Still Possible to Extend {TCP}?},
+  booktitle = {Proceedings of the 2011 ACM Internet Measurement Conference (IMC '11)},
+  pages     = {181--194},
+  year      = {2011},
+  doi       = {10.1145/2068816.2068834}
+}
+
+@misc{iyengar2026ackfrequency,
+  author       = {Jana Iyengar and Ian Swett and Mirja K{\"u}hlewind},
+  title        = {{QUIC Acknowledgment Frequency}},
+  howpublished = {Internet-Draft draft-ietf-quic-ack-frequency-14, IETF},
+  year         = {2026},
+  month        = feb,
+  url          = {https://datatracker.ietf.org/doc/html/draft-ietf-quic-ack-frequency-14},
+  note         = {Work in progress; expired 9 August 2026}
+}
+
+@inproceedings{sander2023ecn,
+  author    = {Constantin Sander and Ike Kunze and Leo Bl{\"o}cher and Mike Kosek and
+               Klaus Wehrle},
+  title     = {{ECN} with {QUIC}: Challenges in the Wild},
+  booktitle = {Proceedings of the 2023 ACM Internet Measurement Conference (IMC '23)},
+  pages     = {540--553},
+  year      = {2023},
+  doi       = {10.1145/3618257.3624821}
+}
+
+@article{custura2023reducing,
+  author  = {Ana Custura and Tom Jones and Raffaello Secchi and Gorry Fairhurst},
+  title   = {Reducing the Acknowledgement Frequency in {IETF QUIC}},
+  journal = {International Journal of Satellite Communications and Networking},
+  volume  = {41},
+  number  = {4},
+  pages   = {315--330},
+  year    = {2023},
+  doi     = {10.1002/sat.1466}
+}
+
+% ===========================================================================
+% Related Work
+% ===========================================================================
+
+% ---------------------------------------------------------------------------
+% Related Work: improving startup
+% ---------------------------------------------------------------------------
+
+@inproceedings{kachooei2023search,
+  author    = {Maryam {Ataei Kachooei} and Jae Chung and Feng Li and Benjamin Peters
+               and Mark Claypool},
+  title     = {{SEARCH}: Robust {TCP} Slow Start Performance over Satellite Networks},
+  booktitle = {Proceedings of the 48th IEEE Conference on Local Computer Networks
+               (LCN)},
+  pages     = {1--4},
+  year      = {2023},
+  doi       = {10.1109/LCN58197.2023.10223364}
+}
+
+@inproceedings{arghavani2024suss,
+  author    = {Mahdi Arghavani and Haibo Zhang and David Eyers and Abbas Arghavani},
+  title     = {{SUSS}: Improving {TCP} Performance by Speeding Up Slow-Start},
+  booktitle = {Proceedings of the ACM SIGCOMM 2024 Conference},
+  pages     = {151--165},
+  year      = {2024},
+  doi       = {10.1145/3651890.3672234}
+}
+
+@inproceedings{gatti2026replicating,
+  author    = {Anthony Gatti and Jiaao Lyu and Tanishka Deshpande and Amy Babay},
+  title     = {Replicating and Extending {SUSS}: {TCP} Slow-Start Acceleration on
+               {AWS}},
+  booktitle = {Proceedings of the 2026 ACM Internet Measurement Conference (IMC '26)},
+  pages     = {711--723},
+  year      = {2026},
+  doi       = {10.1145/3777912.3839822}
+}
+
+@misc{oku2026rapidstart,
+  author       = {Kazuho Oku},
+  title        = {Rapid Startup of Congestion Control},
+  howpublished = {Internet-Draft draft-kazuho-ccwg-rapid-start-02, IETF},
+  year         = {2026},
+  month        = mar,
+  url          = {https://datatracker.ietf.org/doc/draft-kazuho-ccwg-rapid-start/02/},
+  note         = {Work in progress; expired}
+}
+
+@article{lubben2022forecasting,
+  author  = {Ralf L{\"u}bben},
+  title   = {Forecasting {TCP}'s Rate to Speed up Slow Start},
+  journal = {IEEE Open Journal of the Computer Society},
+  volume  = {3},
+  pages   = {185--194},
+  year    = {2022},
+  doi     = {10.1109/OJCS.2022.3208701}
+}
+
+@article{guo2020stateful,
+  author  = {Lingfeng Guo and Jack Y. B. Lee},
+  title   = {Stateful-{TCP}---A New Approach to Accelerate {TCP} Slow-Start},
+  journal = {IEEE Access},
+  volume  = {8},
+  pages   = {195955--195970},
+  year    = {2020},
+  doi     = {10.1109/ACCESS.2020.3034129}
+}
+
+@inproceedings{liu2007jumpstart,
+  author    = {Dan Liu and Mark Allman and Shudong Jin and Limin Wang},
+  title     = {Congestion Control Without a Startup Phase},
+  booktitle = {Proceedings of the 5th International Workshop on Protocols for Fast
+               Long-Distance Networks (PFLDnet)},
+  year      = {2007},
+  month     = feb,
+  url       = {https://mallman.net/pubs/LAJW07/LAJW07.pdf}
+}
+
+@inproceedings{li2015halfback,
+  author    = {Qingxi Li and Mo Dong and P. Brighten Godfrey},
+  title     = {Halfback: Running Short Flows Quickly and Safely},
+  booktitle = {Proceedings of the 11th ACM Conference on Emerging Networking
+               Experiments and Technologies (CoNEXT '15)},
+  pages     = {1--13},
+  year      = {2015},
+  doi       = {10.1145/2716281.2836107}
+}
+
+@inproceedings{anderson2006pcp,
+  author    = {Thomas Anderson and Andrew Collins and Arvind Krishnamurthy and
+               John Zahorjan},
+  title     = {{PCP}: Efficient Endpoint Congestion Control},
+  booktitle = {Proceedings of the 3rd USENIX Symposium on Networked Systems Design
+               and Implementation (NSDI '06)},
+  pages     = {197--210},
+  year      = {2006},
+  url       = {https://www.usenix.org/legacy/events/nsdi06/tech/full_papers/anderson/anderson.pdf}
+}
+
+@inproceedings{misund2019paced,
+  author    = {Joakim Misund and Bob Briscoe},
+  title     = {Paced Chirping: Rapid Flow Start with Very Low Queuing Delay},
+  booktitle = {IEEE INFOCOM 2019 -- IEEE Conference on Computer Communications
+               Workshops (INFOCOM WKSHPS)},
+  year      = {2019},
+  doi       = {10.1109/INFCOMW.2019.8845072}
+}
+
+@inproceedings{misund2019netdev,
+  author    = {Joakim S. Misund and Bob Briscoe},
+  title     = {Paced Chirping: Rethinking {TCP} Start-Up},
+  booktitle = {Proceedings of Netdev 0x13, The Technical Conference on Linux
+               Networking},
+  year      = {2019},
+  month     = mar,
+  url       = {https://bobbriscoe.net/projects/latency/paced_chirping_netdev0x13.pdf}
+}
+
+% TODO: ROS and Nimble Start are unpublished. Agree the citation form (authors,
+% "unpublished manuscript", "personal communication", ...) with the supervisor.
+@misc{ros,
+  key   = {ROS},
+  title = {Receiver-Optimized Startup ({ROS})},
+  note  = {Unpublished manuscript}
+}
+
+@misc{nimblestart,
+  key   = {Nimble},
+  title = {Nimble Start},
+  note  = {Unpublished manuscript}
+}
+
+% ---------------------------------------------------------------------------
+% Related Work: model-based and learning-based congestion control
+% ---------------------------------------------------------------------------
+
+@article{cardwell2016bbr,
+  author  = {Neal Cardwell and Yuchung Cheng and C. Stephen Gunn and
+             Soheil {Hassas Yeganeh} and Van Jacobson},
+  title   = {{BBR}: Congestion-Based Congestion Control},
+  journal = {ACM Queue},
+  volume  = {14},
+  number  = {5},
+  pages   = {20--53},
+  year    = {2016},
+  doi     = {10.1145/3012426.3022184}
+}
+
+@misc{cardwell2026bbrdraft,
+  author       = {Neal Cardwell and Ian Swett and Joseph Beshay},
+  title        = {{BBR} Congestion Control},
+  howpublished = {Internet-Draft draft-ietf-ccwg-bbr-07, IETF},
+  year         = {2026},
+  month        = nov,
+  url          = {https://datatracker.ietf.org/doc/html/draft-ietf-ccwg-bbr-07},
+  note         = {Work in progress; intended status Experimental}
+}
+
+@inproceedings{hock2017experimental,
+  author    = {Mario Hock and Roland Bless and Martina Zitterbart},
+  title     = {Experimental Evaluation of {BBR} Congestion Control},
+  booktitle = {Proceedings of the 25th IEEE International Conference on Network
+               Protocols (ICNP)},
+  pages     = {1--10},
+  year      = {2017},
+  doi       = {10.1109/ICNP.2017.8117540}
+}
+
+@inproceedings{cao2019when,
+  author    = {Yi Cao and Arpit Jain and Kriti Sharma and Aruna Balasubramanian and
+               Anshul Gandhi},
+  title     = {When to Use and When Not to Use {BBR}: An Empirical Analysis and
+               Evaluation Study},
+  booktitle = {Proceedings of the 2019 Internet Measurement Conference (IMC '19)},
+  pages     = {130--136},
+  year      = {2019},
+  doi       = {10.1145/3355369.3355579}
+}
+
+@inproceedings{ware2019modeling,
+  author    = {Ranysha Ware and Matthew K. Mukerjee and Srinivasan Seshan and
+               Justine Sherry},
+  title     = {Modeling {BBR}'s Interactions with Loss-Based Congestion Control},
+  booktitle = {Proceedings of the 2019 Internet Measurement Conference (IMC '19)},
+  pages     = {137--143},
+  year      = {2019},
+  doi       = {10.1145/3355369.3355604}
+}
+
+@inproceedings{zeynali2024promises,
+  author    = {Danesh Zeynali and Emilia N. Weyulu and Seifeddine Fathalli and
+               Balakrishnan Chandrasekaran and Anja Feldmann},
+  title     = {Promises and Potential of {BBRv3}},
+  booktitle = {Passive and Active Measurement (PAM 2024)},
+  series    = {Lecture Notes in Computer Science},
+  publisher = {Springer},
+  pages     = {249--272},
+  year      = {2024},
+  doi       = {10.1007/978-3-031-56252-5_12}
+}
+
+@article{gettys2012bufferbloat,
+  author  = {Jim Gettys and Kathleen Nichols},
+  title   = {Bufferbloat: Dark Buffers in the {Internet}},
+  journal = {Communications of the ACM},
+  volume  = {55},
+  number  = {1},
+  pages   = {57--65},
+  year    = {2012},
+  doi     = {10.1145/2063176.2063196}
+}
+
+@inproceedings{winstein2013remy,
+  author    = {Keith Winstein and Hari Balakrishnan},
+  title     = {{TCP} ex Machina: Computer-Generated Congestion Control},
+  booktitle = {Proceedings of the ACM SIGCOMM 2013 Conference},
+  pages     = {123--134},
+  year      = {2013},
+  doi       = {10.1145/2486001.2486020}
+}
+
+@misc{ns2,
+  key          = {ns-2},
+  title        = {The Network Simulator -- ns-2},
+  howpublished = {University of Southern California, Information Sciences Institute},
+  url          = {https://www.isi.edu/websites/nsnam/ns/},
+  note         = {Accessed 17 November 2026}
+}
+
+@article{breslau2000advances,
+  author  = {Lee Breslau and Deborah Estrin and Kevin Fall and Sally Floyd and
+             John Heidemann and Ahmed Helmy and Polly Huang and Steven McCanne and
+             Kannan Varadhan and Ya Xu and Haobo Yu},
+  title   = {Advances in Network Simulation},
+  journal = {IEEE Computer},
+  volume  = {33},
+  number  = {5},
+  pages   = {59--67},
+  year    = {2000},
+  doi     = {10.1109/2.841785}
+}
+
+@inproceedings{dong2015pcc,
+  author    = {Mo Dong and Qingxi Li and Doron Zarchy and P. Brighten Godfrey and
+               Michael Schapira},
+  title     = {{PCC}: Re-architecting Congestion Control for Consistent High
+               Performance},
+  booktitle = {Proceedings of the 12th USENIX Symposium on Networked Systems Design
+               and Implementation (NSDI '15)},
+  pages     = {395--408},
+  year      = {2015},
+  url       = {https://www.usenix.org/conference/nsdi15/technical-sessions/presentation/dong}
+}
+
+@inproceedings{dong2018vivace,
+  author    = {Mo Dong and Tong Meng and Doron Zarchy and Engin Arslan and Yossi Gilad
+               and Brighten Godfrey and Michael Schapira},
+  title     = {{PCC} Vivace: Online-Learning Congestion Control},
+  booktitle = {Proceedings of the 15th USENIX Symposium on Networked Systems Design
+               and Implementation (NSDI '18)},
+  pages     = {343--356},
+  year      = {2018},
+  url       = {https://www.usenix.org/conference/nsdi18/presentation/dong}
+}
+
+@inproceedings{yan2018pantheon,
+  author    = {Francis Y. Yan and Jestin Ma and Greg D. Hill and Deepti Raghavan and
+               Riad S. Wahby and Philip Levis and Keith Winstein},
+  title     = {Pantheon: The Training Ground for {Internet} Congestion-Control
+               Research},
+  booktitle = {Proceedings of the 2018 USENIX Annual Technical Conference (USENIX
+               ATC '18)},
+  pages     = {731--743},
+  year      = {2018},
+  url       = {https://www.usenix.org/conference/atc18/presentation/yan-francis}
+}
+
+@inproceedings{jay2019aurora,
+  author    = {Nathan Jay and Noga Rotman and Brighten Godfrey and Michael Schapira
+               and Aviv Tamar},
+  title     = {A Deep Reinforcement Learning Perspective on {Internet} Congestion
+               Control},
+  booktitle = {Proceedings of the 36th International Conference on Machine Learning
+               (ICML)},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {97},
+  pages     = {3050--3059},
+  year      = {2019},
+  url       = {https://proceedings.mlr.press/v97/jay19a.html}
+}
+
+@inproceedings{abbasloo2020orca,
+  author    = {Soheil Abbasloo and Chen-Yu Yen and H. Jonathan Chao},
+  title     = {Classic Meets Modern: A Pragmatic Learning-Based Congestion Control for
+               the {Internet}},
+  booktitle = {Proceedings of the ACM SIGCOMM 2020 Conference},
+  pages     = {632--647},
+  year      = {2020},
+  doi       = {10.1145/3387514.3405892}
+}
+
+@inproceedings{yen2023sage,
+  author    = {Chen-Yu Yen and Soheil Abbasloo and H. Jonathan Chao},
+  title     = {Computers Can Learn from the Heuristic Designs and Master {Internet}
+               Congestion Control},
+  booktitle = {Proceedings of the ACM SIGCOMM 2023 Conference},
+  pages     = {255--274},
+  year      = {2023},
+  doi       = {10.1145/3603269.3604838}
+}
+
+@inproceedings{liao2024astraea,
+  author    = {Xudong Liao and Han Tian and Chaoliang Zeng and Xinchen Wan and Kai Chen},
+  title     = {Astraea: Towards Fair and Efficient Learning-based Congestion Control},
+  booktitle = {Proceedings of the 19th European Conference on Computer Systems
+               (EuroSys '24)},
+  pages     = {99--114},
+  year      = {2024},
+  doi       = {10.1145/3627703.3650069}
+}
+
+@inproceedings{eliyahu2021verifying,
+  author    = {Tomer Eliyahu and Yafim Kazak and Guy Katz and Michael Schapira},
+  title     = {Verifying Learning-Augmented Systems},
+  booktitle = {Proceedings of the ACM SIGCOMM 2021 Conference},
+  pages     = {305--318},
+  year      = {2021},
+  doi       = {10.1145/3452296.3472936}
+}
+
+% ---------------------------------------------------------------------------
+% Related Work: network-assisted congestion control
+% ---------------------------------------------------------------------------
+
+@techreport{rfc8311,
+  author      = {David L. Black},
+  title       = {{Relaxing Restrictions on Explicit Congestion Notification (ECN)
+                 Experimentation}},
+  type        = {RFC},
+  number      = {8311},
+  institution = {IETF},
+  year        = {2018},
+  month       = jan,
+  doi         = {10.17487/RFC8311}
+}
+
+@techreport{rfc8289,
+  author      = {Kathleen Nichols and Van Jacobson and Andrew McGregor and Jana Iyengar},
+  title       = {{Controlled Delay Active Queue Management}},
+  type        = {RFC},
+  number      = {8289},
+  institution = {IETF},
+  year        = {2018},
+  month       = jan,
+  doi         = {10.17487/RFC8289}
+}
+
+@techreport{rfc8290,
+  author      = {Toke H{\o}iland-J{\o}rgensen and Paul McKenney and Dave Taht and
+                 Jim Gettys and Eric Dumazet},
+  title       = {{The Flow Queue CoDel Packet Scheduler and Active Queue Management
+                 Algorithm}},
+  type        = {RFC},
+  number      = {8290},
+  institution = {IETF},
+  year        = {2018},
+  month       = jan,
+  doi         = {10.17487/RFC8290}
+}
+
+@techreport{rfc8257,
+  author      = {Stephen Bensley and Dave Thaler and Praveen Balasubramanian and
+                 Lars Eggert and Glenn Judd},
+  title       = {{Data Center TCP (DCTCP): TCP Congestion Control for Data Centers}},
+  type        = {RFC},
+  number      = {8257},
+  institution = {IETF},
+  year        = {2017},
+  month       = oct,
+  doi         = {10.17487/RFC8257}
+}
+
+@techreport{rfc9330,
+  author      = {Bob Briscoe and Koen {De Schepper} and Marcelo Bagnulo and Greg White},
+  title       = {{Low Latency, Low Loss, and Scalable Throughput (L4S) Internet
+                 Service: Architecture}},
+  type        = {RFC},
+  number      = {9330},
+  institution = {IETF},
+  year        = {2023},
+  month       = jan,
+  doi         = {10.17487/RFC9330}
+}
+
+@techreport{rfc9331,
+  author      = {Koen {De Schepper} and Bob Briscoe},
+  title       = {{The Explicit Congestion Notification (ECN) Protocol for Low Latency,
+                 Low Loss, and Scalable Throughput (L4S)}},
+  type        = {RFC},
+  number      = {9331},
+  institution = {IETF},
+  year        = {2023},
+  month       = jan,
+  doi         = {10.17487/RFC9331}
+}
+
+@techreport{rfc9332,
+  author      = {Koen {De Schepper} and Bob Briscoe and Greg White},
+  title       = {{Dual-Queue Coupled Active Queue Management (AQM) for Low Latency, Low
+                 Loss, and Scalable Throughput (L4S)}},
+  type        = {RFC},
+  number      = {9332},
+  institution = {IETF},
+  year        = {2023},
+  month       = jan,
+  doi         = {10.17487/RFC9332}
+}
+
+@techreport{rfc4782,
+  author      = {Sally Floyd and Mark Allman and Amit Jain and Pasi Sarolahti},
+  title       = {{Quick-Start for TCP and IP}},
+  type        = {RFC},
+  number      = {4782},
+  institution = {IETF},
+  year        = {2007},
+  month       = jan,
+  doi         = {10.17487/RFC4782}
+}
+
+@techreport{rfc7567,
+  author      = {Fred Baker and Gorry Fairhurst},
+  title       = {{IETF Recommendations Regarding Active Queue Management}},
+  type        = {RFC},
+  number      = {7567},
+  institution = {IETF},
+  year        = {2015},
+  month       = jul,
+  doi         = {10.17487/RFC7567},
+  note        = {BCP 197}
+}
+
+@misc{lim2022fresh,
+  author       = {Hyoyoung Lim and Seonwoo Kim and Jackson Sippe and Junseon Kim and
+                  Greg White and Chul-Ho Lee and Eric Wustrow and Kyunghan Lee and
+                  Dirk Grunwald and Sangtae Ha},
+  title        = {A Fresh Look at {ECN} Traversal in the Wild},
+  howpublished = {arXiv preprint arXiv:2208.14523},
+  year         = {2022},
+  url          = {https://arxiv.org/abs/2208.14523}
+}
+
+@inproceedings{deschepper2016pi2,
+  author    = {Koen {De Schepper} and Olga Bondarenko and Ing-Jyh Tsang and Bob Briscoe},
+  title     = {{PI}\textsuperscript{2}: A Linearized {AQM} for both Classic and Scalable
+               {TCP}},
+  booktitle = {Proceedings of the 12th International Conference on emerging Networking
+               EXperiments and Technologies (CoNEXT '16)},
+  pages     = {105--119},
+  year      = {2016},
+  doi       = {10.1145/2999572.2999578}
+}
+
+@misc{deschepper2024prague,
+  author       = {Koen {De Schepper} and Olivier Tilmans and Bob Briscoe and Vidhi Goel},
+  title        = {Prague Congestion Control},
+  howpublished = {Internet-Draft draft-briscoe-iccrg-prague-congestion-control-04, IETF},
+  year         = {2024},
+  month        = jul,
+  url          = {https://datatracker.ietf.org/doc/draft-briscoe-iccrg-prague-congestion-control/04/},
+  note         = {Work in progress; expired}
+}
+
+@misc{singh2026extending,
+  author       = {Harkirat Singh and Fatih Berkay Sarpkaya and Hakan Gulec and Fraida Fund
+                  and Shivendra Panwar},
+  title        = {Extending Low Latency Service Across the {Internet}},
+  howpublished = {arXiv preprint arXiv:2608.26601},
+  year         = {2026},
+  url          = {https://arxiv.org/abs/2608.26601}
+}
+
+@inproceedings{goyal2020abc,
+  author    = {Prateesh Goyal and Anup Agarwal and Ravi Netravali and Mohammad Alizadeh
+               and Hari Balakrishnan},
+  title     = {{ABC}: A Simple Explicit Congestion Controller for Wireless Networks},
+  booktitle = {Proceedings of the 17th USENIX Symposium on Networked Systems Design and
+               Implementation (NSDI '20)},
+  pages     = {353--372},
+  year      = {2020},
+  url       = {https://www.usenix.org/conference/nsdi20/presentation/goyal}
+}
+
+@inproceedings{li2019hpcc,
+  author    = {Yuliang Li and Rui Miao and Hongqiang Harry Liu and Yan Zhuang and Fei Feng
+               and Lingbo Tang and Zheng Cao and Ming Zhang and Frank Kelly and
+               Mohammad Alizadeh and Minlan Yu},
+  title     = {{HPCC}: High Precision Congestion Control},
+  booktitle = {Proceedings of the ACM SIGCOMM 2019 Conference},
+  pages     = {44--58},
+  year      = {2019},
+  doi       = {10.1145/3341302.3342085}
+}
+
+@inproceedings{arslan2023bolt,
+  author    = {Serhat Arslan and Yuliang Li and Gautam Kumar and Nandita Dukkipati},
+  title     = {Bolt: Sub-{RTT} Congestion Control for Ultra-Low Latency},
+  booktitle = {Proceedings of the 20th USENIX Symposium on Networked Systems Design and
+               Implementation (NSDI '23)},
+  pages     = {219--236},
+  year      = {2023},
+  url       = {https://www.usenix.org/conference/nsdi23/presentation/arslan}
+}
+
+% ---------------------------------------------------------------------------
+% Related Work: coordinating flows and size-aware congestion control
+% ---------------------------------------------------------------------------
+
+@inproceedings{balakrishnan1999cm,
+  author    = {Hari Balakrishnan and Hariharan S. Rahul and Srinivasan Seshan},
+  title     = {An Integrated Congestion Management Architecture for {Internet} Hosts},
+  booktitle = {Proceedings of the ACM SIGCOMM '99 Conference},
+  pages     = {175--187},
+  year      = {1999},
+  doi       = {10.1145/316188.316220}
+}
+
+@inproceedings{islam2018ctrltcp,
+  author    = {Safiqul Islam and Michael Welzl and Kristian Hiorth and David Hayes and
+               Grenville Armitage and Stein Gjessing},
+  title     = {{ctrlTCP}: Reducing Latency through Coupled, Heterogeneous Multi-Flow
+               {TCP} Congestion Control},
+  booktitle = {IEEE INFOCOM 2018 -- IEEE Conference on Computer Communications
+               Workshops (INFOCOM WKSHPS)},
+  pages     = {214--219},
+  year      = {2018},
+  doi       = {10.1109/INFCOMW.2018.8406887}
+}
+
+@inproceedings{singh2004mpat,
+  author    = {Manpreet Singh and Prashant Pradhan and Paul Francis},
+  title     = {{MPAT}: Aggregate {TCP} Congestion Management as a Building Block for
+               {Internet} {QoS}},
+  booktitle = {Proceedings of the 12th IEEE International Conference on Network
+               Protocols (ICNP 2004)},
+  pages     = {129--138},
+  year      = {2004},
+  doi       = {10.1109/ICNP.2004.1348102}
+}
+
+@inproceedings{kuzmanovic2003tcplp,
+  author    = {Aleksandar Kuzmanovic and Edward W. Knightly},
+  title     = {{TCP-LP}: A Distributed Algorithm for Low Priority Data Transfer},
+  booktitle = {Proceedings of IEEE INFOCOM 2003},
+  pages     = {1691--1701},
+  year      = {2003},
+  doi       = {10.1109/INFCOM.2003.1209192}
+}
+
+@inproceedings{venkataramani2002nice,
+  author    = {Arun Venkataramani and Ravi Kokku and Mike Dahlin},
+  title     = {{TCP} Nice: A Mechanism for Background Transfers},
+  booktitle = {Proceedings of the 5th Symposium on Operating Systems Design and
+               Implementation (OSDI '02)},
+  year      = {2002},
+  url       = {https://www.usenix.org/legacy/events/osdi02/tech/venkataramani.html}
+}
+
+@techreport{rfc6817,
+  author      = {Stanislav Shalunov and Greg Hazel and Jana Iyengar and
+                 Mirja K{\"u}hlewind},
+  title       = {{Low Extra Delay Background Transport (LEDBAT)}},
+  type        = {RFC},
+  number      = {6817},
+  institution = {IETF},
+  year        = {2012},
+  month       = dec,
+  doi         = {10.17487/RFC6817}
+}
+
+@inproceedings{meng2020proteus,
+  author    = {Tong Meng and Neta {Rozen Schiff} and P. Brighten Godfrey and
+               Michael Schapira},
+  title     = {{PCC} Proteus: Scavenger Transport and Beyond},
+  booktitle = {Proceedings of the ACM SIGCOMM 2020 Conference},
+  pages     = {615--631},
+  year      = {2020},
+  doi       = {10.1145/3387514.3405891}
+}
+
+@inproceedings{munir2013l2dct,
+  author    = {Ali Munir and Ihsan A. Qazi and Zartash A. Uzmi and Aisha Mushtaq and
+               Saad N. Ismail and M. Safdar Iqbal and Basma Khan},
+  title     = {Minimizing Flow Completion Times in Data Centers},
+  booktitle = {Proceedings of IEEE INFOCOM 2013},
+  pages     = {2157--2165},
+  year      = {2013},
+  doi       = {10.1109/INFCOM.2013.6567018}
+}
+
+@inproceedings{alizadeh2013pfabric,
+  author    = {Mohammad Alizadeh and Shuang Yang and Milad Sharif and Sachin Katti and
+               Nick McKeown and Balaji Prabhakar and Scott Shenker},
+  title     = {{pFabric}: Minimal Near-Optimal Datacenter Transport},
+  booktitle = {Proceedings of the ACM SIGCOMM 2013 Conference},
+  pages     = {435--446},
+  year      = {2013},
+  doi       = {10.1145/2486001.2486031}
+}
+
+@inproceedings{bai2015pias,
+  author    = {Wei Bai and Li Chen and Kai Chen and Dongsu Han and Chen Tian and
+               Hao Wang},
+  title     = {Information-Agnostic Flow Scheduling for Commodity Data Centers},
+  booktitle = {Proceedings of the 12th USENIX Symposium on Networked Systems Design
+               and Implementation (NSDI '15)},
+  pages     = {455--468},
+  year      = {2015},
+  url       = {https://www.usenix.org/conference/nsdi15/technical-sessions/presentation/bai}
+}
+
+% ---------------------------------------------------------------------------
+% Related Work: congestion control in QUIC
+% ---------------------------------------------------------------------------
+
+@techreport{rfc8085,
+  author      = {Lars Eggert and Gorry Fairhurst and Greg Shepherd},
+  title       = {{UDP Usage Guidelines}},
+  type        = {RFC},
+  number      = {8085},
+  institution = {IETF},
+  year        = {2017},
+  month       = mar,
+  doi         = {10.17487/RFC8085},
+  note        = {BCP 145}
+}
+
+@inproceedings{kakhki2017long,
+  author    = {Arash {Molavi Kakhki} and Samuel Jero and David Choffnes and
+               Cristina Nita-Rotaru and Alan Mislove},
+  title     = {Taking a Long Look at {QUIC}: An Approach for Rigorous Evaluation of
+               Rapidly Evolving Transport Protocols},
+  booktitle = {Proceedings of the 2017 Internet Measurement Conference (IMC '17)},
+  pages     = {290--303},
+  year      = {2017},
+  doi       = {10.1145/3131365.3131368}
+}
+
+@inproceedings{marx2020same,
+  author    = {Robin Marx and Joris Herbots and Wim Lamotte and Peter Quax},
+  title     = {Same Standards, Different Decisions: A Study of {QUIC} and {HTTP/3}
+               Implementation Diversity},
+  booktitle = {Proceedings of the Workshop on the Evolution, Performance, and
+               Interoperability of QUIC (EPIQ '20)},
+  pages     = {14--20},
+  year      = {2020},
+  doi       = {10.1145/3405796.3405828}
+}
+
+@inproceedings{mishra2022speciation,
+  author    = {Ayush Mishra and Sherman Lim and Ben Leong},
+  title     = {Understanding Speciation in {QUIC} Congestion Control},
+  booktitle = {Proceedings of the 22nd ACM Internet Measurement Conference (IMC '22)},
+  pages     = {560--566},
+  year      = {2022},
+  doi       = {10.1145/3517745.3561459}
+}
+
+@inproceedings{mishra2023cambrian,
+  author    = {Ayush Mishra and Ben Leong},
+  title     = {Containing the {Cambrian} Explosion in {QUIC} Congestion Control},
+  booktitle = {Proceedings of the 2023 ACM Internet Measurement Conference (IMC '23)},
+  pages     = {526--539},
+  year      = {2023},
+  doi       = {10.1145/3618257.3624811}
+}
+
+@article{kempf2025quicsteps,
+  author  = {Marcel Kempf and Simon Tietz and Benedikt Jaeger and Johannes Sp{\"a}th
+             and Georg Carle and Johannes Zirngibl},
+  title   = {{QUIC} Steps: Evaluating Pacing Strategies in {QUIC} Implementations},
+  journal = {Proceedings of the ACM on Networking},
+  volume  = {3},
+  number  = {CoNEXT2},
+  pages   = {1--14},
+  year    = {2025},
+  doi     = {10.1145/3730985}
+}
+
+@article{mucke2025waiting,
+  author  = {Jonas M{\"u}cke and Marcin Nawrocki and Raphael Hiesgen and Patrick
+             Sattler and Johannes Zirngibl and Georg Carle and Jan Luxemburk and
+             Thomas C. Schmidt and Matthias W{\"a}hlisch},
+  title   = {Waiting for {QUIC}: Passive Measurements to Understand {QUIC}
+             Deployments},
+  journal = {Proceedings of the ACM on Networking},
+  volume  = {3},
+  number  = {CoNEXT4},
+  pages   = {1--26},
+  year    = {2025},
+  doi     = {10.1145/3768988}
+}
+
+@article{sidhu2026video,
+  author  = {Jashanjot Singh Sidhu and Abdelhak Bentaleb},
+  title   = {Video Streaming over {QUIC}: A Comprehensive Study},
+  journal = {ACM Transactions on Multimedia Computing, Communications, and
+             Applications},
+  volume  = {22},
+  number  = {4},
+  pages   = {1--29},
+  year    = {2026},
+  doi     = {10.1145/3793674}
+}
+
+@inproceedings{cronin2024search,
+  author    = {Amber Cronin and Maryam {Ataei Kachooei} and Jae Chung and Feng Li and
+               Benjamin Peters and Mark Claypool},
+  title     = {Improving {QUIC} Slow Start Behavior in Wireless Networks with
+               {SEARCH}},
+  booktitle = {Proceedings of the 30th IEEE International Symposium on Local and
+               Metropolitan Area Networks (LANMAN)},
+  pages     = {94--99},
+  year      = {2024},
+  doi       = {10.1109/LANMAN61958.2024.10621875}
+}
+
+@misc{mascolo2025quicdc,
+  author       = {Saverio Mascolo and Andrea Vittorio Balillo and Gioacchino Manfredi
+                  and Davide D'Agostino and Luca {De Cicco}},
+  title        = {{QUIC} Delay Control: An Implementation of Congestion and Delay
+                  Control},
+  howpublished = {arXiv preprint arXiv:2507.00896},
+  year         = {2025},
+  url          = {https://arxiv.org/abs/2507.00896}
+}
+
+@inproceedings{mascolo2001westwood,
+  author    = {Saverio Mascolo and Claudio Casetti and Mario Gerla and M. Y. Sanadidi
+               and Ren Wang},
+  title     = {{TCP} Westwood: Bandwidth Estimation for Enhanced Transport over
+               Wireless Links},
+  booktitle = {Proceedings of the 7th Annual International Conference on Mobile
+               Computing and Networking (MobiCom '01)},
+  pages     = {287--297},
+  year      = {2001},
+  doi       = {10.1145/381677.381704}
+}
+
+@article{mascolo2004westwoodplus,
+  author  = {Saverio Mascolo and Luigi A. Grieco and Roberto Ferorelli and
+             Pietro Camarda and Giacomo Piscitelli},
+  title   = {Performance Evaluation of {Westwood+} {TCP} Congestion Control},
+  journal = {Performance Evaluation},
+  volume  = {55},
+  number  = {1--2},
+  pages   = {93--111},
+  year    = {2004},
+  doi     = {10.1016/S0166-5316(03)00098-1}
+}
+
+@article{sidhu2026aero,
+  author  = {Jashanjot Singh Sidhu and Abdelhak Bentaleb},
+  title   = {Towards a Pluggable and Implementation-Agnostic Learning-Based
+             Congestion Control for {QUIC}},
+  journal = {ACM Transactions on Multimedia Computing, Communications, and
+             Applications},
+  year    = {2026},
+  doi     = {10.1145/3827616},
+  note    = {Online first}
+}
+
+@inproceedings{fischer2025neqo,
+  author    = {Nicolai Fischer and Matthias Hofst{\"a}tter and J{\"o}rg Deutschmann and
+               Reinhard German},
+  title     = {Getting up to Speed with {Neqo} and Careful Resume},
+  booktitle = {Proceedings of the Applied Networking Research Workshop (ANRW '25)},
+  pages     = {62--69},
+  year      = {2025},
+  doi       = {10.1145/3744200.3744766}
+}
+
+@inproceedings{deconinck2017mpquic,
+  author    = {Quentin {De Coninck} and Olivier Bonaventure},
+  title     = {Multipath {QUIC}: Design and Evaluation},
+  booktitle = {Proceedings of the 13th International Conference on emerging
+               Networking EXperiments and Technologies (CoNEXT '17)},
+  pages     = {160--166},
+  year      = {2017},
+  doi       = {10.1145/3143361.3143370}
+}
+
+@inproceedings{zheng2021xlink,
+  author    = {Zhilong Zheng and Yunfei Ma and Yanmei Liu and Furong Yang and Zhenyu Li
+               and Yuanbo Zhang and Jiuhai Zhang and Wei Shi and Wentao Chen and Ding Li
+               and Qing An and Hai Hong and Hongqiang Harry Liu and Ming Zhang},
+  title     = {{XLINK}: {QoE}-Driven Multi-Path {QUIC} Transport in Large-Scale Video
+               Services},
+  booktitle = {Proceedings of the ACM SIGCOMM 2021 Conference},
+  pages     = {418--432},
+  year      = {2021},
+  doi       = {10.1145/3452296.3472893}
+}
+
+@techreport{rfc10069,
+  author      = {Yanmei Liu and Yunfei Ma and Quentin {De Coninck} and Olivier
+                 Bonaventure and Christian Huitema and Mirja K{\"u}hlewind},
+  title       = {{Managing Multiple Paths for a QUIC Connection}},
+  type        = {RFC},
+  number      = {10069},
+  institution = {IETF},
+  year        = {2026},
+  month       = nov,
+  doi         = {10.17487/RFC10069}
+}
+
+@inproceedings{haile2022performance,
+  author    = {Habtegebreil Haile and Karl-Johan Grinnemo and Simone Ferlin and
+               Per Hurtig and Anna Brunstrom},
+  title     = {Performance of {QUIC} Congestion Control Algorithms in {5G} Networks},
+  booktitle = {Proceedings of the ACM SIGCOMM Workshop on 5G and Beyond Network
+               Measurements, Modeling, and Use Cases (5G-MeMU '22)},
+  pages     = {15--21},
+  year      = {2022},
+  doi       = {10.1145/3538394.3546040}
+}
+
+@article{zhang2023pbq,
+  author  = {Zhifei Zhang and Shuo Li and Yiyang Ge and Ge Xiong and Yu Zhang and
+             Ke Xiong},
+  title   = {{PBQ}-Enhanced {QUIC}: {QUIC} with Deep Reinforcement Learning Congestion
+             Control Mechanism},
+  journal = {Entropy},
+  volume  = {25},
+  number  = {2},
+  pages   = {294},
+  year    = {2023},
+  doi     = {10.3390/e25020294}
+}
+
+% ---------------------------------------------------------------------------
+% Related Work: QUIC-specific congestion control
+% ---------------------------------------------------------------------------
+
+@misc{kuhn2021bdpframe,
+  author       = {Nicolas Kuhn and Francklin Simo and David Pradas and Emile Stephan},
+  title        = {Evaluating {BDP FRAME} Extension for {QUIC}},
+  howpublished = {Technical report, arXiv:2112.05450},
+  year         = {2021},
+  url          = {https://arxiv.org/abs/2112.05450}
+}
+
+@techreport{ruth2019blitz,
+  author      = {Jan R{\"u}th and Konrad Wolsing and Martin Serror and Klaus Wehrle and
+                 Oliver Hohlfeld},
+  title       = {Blitz-starting {QUIC} Connections},
+  institution = {RWTH Aachen University},
+  type        = {Technical Report},
+  year        = {2019},
+  note        = {arXiv:1905.03144},
+  url         = {https://arxiv.org/abs/1905.03144}
+}
+
+@inproceedings{wu2024wira,
+  author    = {Bo Wu and Tong Li and Cheng Luo and Xu Yan and Fuyu Wang and
+               Changkui Ouyang and Linfeng Guo and Haiyang Wang and Ke Xu},
+  title     = {Reducing First-Frame Delay of Live Streaming by Simultaneously
+               Initializing Window and Rate},
+  booktitle = {Proceedings of the 44th IEEE International Conference on Distributed
+               Computing Systems (ICDCS)},
+  pages     = {232--242},
+  year      = {2024},
+  doi       = {10.1109/ICDCS60910.2024.00030}
+}
+
+@inproceedings{michel2019quicfec,
+  author    = {Fran{\c{c}}ois Michel and Quentin {De Coninck} and Olivier Bonaventure},
+  title     = {{QUIC-FEC}: Bringing the Benefits of Forward Erasure Correction to
+               {QUIC}},
+  booktitle = {Proceedings of the 2019 IFIP Networking Conference},
+  pages     = {1--9},
+  year      = {2019},
+  doi       = {10.23919/IFIPNetworking.2019.8816838}
+}
+
+@article{kharat2021modified,
+  author  = {Prashant Kharat and Muralidhar Kulkarni},
+  title   = {Modified {QUIC} Protocol with Congestion Control for Improved Network
+             Performance},
+  journal = {IET Communications},
+  volume  = {15},
+  number  = {9},
+  pages   = {1210--1222},
+  year    = {2021},
+  doi     = {10.1049/cmu2.12154}
+}
+
+@article{michel2023flec,
+  author  = {Fran{\c{c}}ois Michel and Alejandro Cohen and Derya Malak and
+             Quentin {De Coninck} and Muriel M{\'e}dard and Olivier Bonaventure},
+  title   = {{FlEC}: Enhancing {QUIC} With Application-Tailored Reliability
+             Mechanisms},
+  journal = {IEEE/ACM Transactions on Networking},
+  volume  = {31},
+  number  = {2},
+  pages   = {606--619},
+  year    = {2023},
+  doi     = {10.1109/TNET.2022.3195611}
+}
+
+@inproceedings{mucke2024reacked,
+  author    = {Jonas M{\"u}cke and Marcin Nawrocki and Raphael Hiesgen and
+               Thomas C. Schmidt and Matthias W{\"a}hlisch},
+  title     = {{ReACKed QUICer}: Measuring the Performance of Instant Acknowledgments
+               in {QUIC} Handshakes},
+  booktitle = {Proceedings of the 2024 ACM Internet Measurement Conference (IMC '24)},
+  pages     = {389--400},
+  year      = {2024},
+  doi       = {10.1145/3646547.3689022}
+}
+
+@inproceedings{chen2024quichoa,
+  author    = {Po-Jui Chen and Ren-Chieh Hsu and Tzu-Chi Yu and Chi-Yu Li},
+  title     = {{QUIC-HOA}: A Cross-layer, Handover-aware Design for {QUIC} Connection
+               Migration},
+  booktitle = {Proceedings of IEEE GLOBECOM 2024},
+  pages     = {3643--3648},
+  year      = {2024},
+  doi       = {10.1109/GLOBECOM52923.2024.10900944}
+}
+
+@inproceedings{engelbart2021congestion,
+  author    = {Mathis Engelbart and J{\"o}rg Ott},
+  title     = {Congestion Control for Real-time Media over {QUIC}},
+  booktitle = {Proceedings of the 2021 Workshop on Evolution, Performance and
+               Interoperability of QUIC (EPIQ '21)},
+  pages     = {1--7},
+  year      = {2021},
+  doi       = {10.1145/3488660.3493801}
+}
+
+@inproceedings{engelbart2026quic,
+  author    = {Mathis Engelbart and Fabian Willi Fromwald and J{\"o}rg Ott},
+  title     = {{QUIC} as Multiplexing Layer in {WebRTC}},
+  booktitle = {Proceedings of the 2026 Applied Networking Research Workshop (ANRW '26)},
+  pages     = {119--125},
+  year      = {2026},
+  doi       = {10.1145/3822163.3827919}
+}
+
+@inproceedings{kim2023adaptive,
+  author    = {So-Yong Kim and Seok-Joo Koh},
+  title     = {Adaptive Control of Congestion Window in {QUIC}},
+  booktitle = {Proceedings of the 14th International Conference on Information and
+               Communication Technology Convergence (ICTC)},
+  pages     = {1394--1396},
+  year      = {2023},
+  doi       = {10.1109/ICTC58733.2023.10393389}
+}
+
+@article{chen2023pccpriority,
+  author  = {Zhuoyue Chen and Kechao Cai and Jinbei Zhang and Xiangwei Zhu},
+  title   = {{PCC} Priority: A Priority-Aware Bandwidth Allocation Framework for
+             {QUIC}},
+  journal = {IEEE Networking Letters},
+  volume  = {5},
+  number  = {4},
+  pages   = {279--283},
+  year    = {2023},
+  doi     = {10.1109/LNET.2023.3269054}
+}
+
+@misc{rizvi2026cats,
+  author       = {Syed Muhammad Aqdas Rizvi},
+  title        = {Single-Connection Mixed-Criticality Transport with {CATS}: Bounded
+                  Guarantees, Three Structural Limits, and a {QUIC} Escape},
+  howpublished = {arXiv preprint arXiv:2606.16924},
+  year         = {2026},
+  url          = {https://arxiv.org/abs/2606.16924}
+}

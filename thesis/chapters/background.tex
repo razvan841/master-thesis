@@ -1,0 +1,519 @@
+\chapter{Background}\label{chap:background}
+
+This chapter covers the background that the rest of the thesis builds on. Section~\ref{sec:bg-tcp-cc} goes over the early TCP implementation and the first congestion control measures Section~\ref{sec:bg-quic} introduces the QUIC protocol and some of the features that distinguish it from TCP and Section~\ref{sec:bg-traffic} summarizes measurements of Internet traffic.
+
+\section{TCP and the initial congestion control solutions}\label{sec:bg-tcp-cc}
+
+\subsection{Congestion collapse and the first congestion control}\label{sec:bg-origins}
+
+In a packet-switched network, links are shared, and networks do not stop
+senders from uploading more traffic than a link can carry. The excess packets that are generated wait in
+router buffers, and once the buffers are full, they are dropped, leading to packet loss. In 1984, Nagle described how this can turn into congestion collapse~\cite{rfc896}. A sudden load
+raises the round-trip time (RTT) faster than hosts can update their estimates of
+it, so hosts retransmit packets that are only delayed. The buffers fill with
+duplicate copies, every packet is sent several times, and throughput falls to a
+small fraction of normal.
+
+The problem became real in 1986, with the first of a series of congestion
+collapses on the early Internet: throughput between
+the Lawrence Berkeley Laboratory and UC~Berkeley dropped from 32\,kbit/s to 40\,bit/s. 
+In an attempt to mitigate the decrease in throughput, seven algorithms were added to TCP, among them round-trip-time variance estimation, exponential retransmit timer backoff, slow start and dynamic window sizing on congestion~\cite{jacobson1988congestion}.
+
+These algorithms focus on maintaining the conservation of packets: a
+connection running with a full window should put a new packet
+into the network only when an old one leaves it. Acknowledgments (ACKs) act
+as a clock, because each ACK reports that a packet has left the network and
+allows the sender to send another. Jacobson identified three ways in which
+conservation can fail: the connection never reaches the full window, the sender
+injects a new packet before an old one has left, or resource limits along the path
+prevent equilibrium altogether~\cite{jacobson1988congestion}. Each of the following algorithms addresses one of them.
+
+\paragraph{Slow start.} Slow start adds a congestion window (\textit{cwnd}) to the
+connection state. The sender sets \textit{cwnd} to one packet when it starts or
+restarts after a loss, increases it by one packet for every ACK of new data, and
+never has more than the minimum of \textit{cwnd} and the receiver's advertised
+window (RCV.WND) in flight. Each ACK therefore allows for the release of two packets, so the \textit{cwnd}
+doubles every round-trip-time (RTT): reaching a window of $W$ packets takes $RTT\log_2 W$.
+
+\paragraph{Retransmission timer.} The second failure is a retransmission timer that
+fires while a packet is still in transit. The original TCP specification~\cite{rfc793} set the
+timeout to a fixed multiple of a smoothed RTT estimate. Jacobson
+showed that the current specification tolerated loads of up to about
+30\% of the capacity: above that, the RTT varies so much that the timer retransmits packets that
+are just delayed, adding more load to a network that is already
+overloaded~\cite{jacobson1988congestion}. His new timer estimates the variation of the
+RTT as well as its mean, sets the timeout from both, and backs off exponentially
+when retransmissions repeat. Together with Karn's rule~\cite{karn1987improving}, which discards RTT samples
+from retransmitted packets, this design is still the basis
+of TCP's retransmission timer, now standardized in RFC 6298~\cite{rfc6298}.
+
+\paragraph{Congestion avoidance.} To mitigate the third failure, the network should signal congestion when the path does not have enough capacity and the endpoints must react to it. Jacobson observed that on most paths packet loss due to damage is
+rare, well below 1\%, so a lost packet almost always means that a buffer
+overflowed~\cite{jacobson1988congestion}. Packet loss was therefore chosen as the congestion signal, requiring no changes to routers. Congestion avoidance reacts to packet loss with
+additive increase, multiplicative decrease (AIMD): on a timeout,
+\textit{cwnd} is halved, and on each ACK of new data, \textit{cwnd} grows by
+$1/\textit{cwnd}$, about one packet per RTT. On a timeout, half of the current window is stored in a slow start
+threshold (\textit{ssthresh}) and \textit{cwnd} restarts at one packet. Slow start
+then runs until \textit{cwnd} reaches \textit{ssthresh}, and congestion avoidance
+takes over above it.
+
+Together with \emph{fast retransmit}, which retransmits a lost packet after a small
+number of duplicate ACKs instead of waiting for the timer, these algorithms were
+first released in 4.3BSD Tahoe in 1988 and are therefore known as TCP
+Tahoe~\cite{fall1996simulation}. Their effect is still relevant today: the timer improvements
+and congestion control mechanisms of TCP have largely removed
+congestion collapse~\cite{rfc2914}, and end-host control with packet
+loss as the congestion signal is still the basis of the default TCP algorithms.
+
+\subsection{CUBIC}\label{sec:bg-cubic}
+
+\paragraph{Fast recovery} TCP Reno~\cite{rfc5681} kept Tahoe's algorithms and added \emph{fast recovery}.
+When three duplicate ACKs indicate that a single packet was lost, the sender
+retransmits it, halves \textit{cwnd} and continues in congestion avoidance, because
+the duplicate ACKs show that later packets are still leaving the network. Only a
+retransmission timeout sends the connection back to slow start with a window of one
+packet. In steady state, the window therefore follows a sawtooth: it grows by one
+packet per RTT and is halved at each loss. This pattern can also be seen in Figure~\ref{fig:tcp_reno}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=1\linewidth]{figures/TCP_Reno_Sawtooth.png}
+    \caption{TCP Reno in steady state (from Computer Networks: A Systems Approach~\cite{peterson2022computer}) }
+    \label{fig:tcp_reno}
+\end{figure}
+
+This sawtooth does not scale well to paths with a large bandwidth-delay product (BDP).
+After a loss, Reno needs cwnd/2 RTTs to recover. On a 1\,Gbit/s
+path with an RTT of 100\,ms, the window that fills the path is about 8\,300 packets
+of 1\,500 bytes. After a single loss, Reno needs about 4\,150 RTTs, or seven
+minutes, to return to it. This problem is noticeable even with
+windows of a few hundred packets. Several variants of TCP
+were proposed to solve it; the one that was eventually widely adopted is CUBIC.
+
+\paragraph{The cubic window function.} Ha, Rhee and Xu proposed CUBIC~\cite{ha2008cubic} in 2008 as the
+successor to BIC-TCP. It was published as RFC 9438
+in 2023~\cite{rfc9438}. CUBIC keeps Reno's structure of slow start, congestion
+avoidance and multiplicative decrease, but changes two of its rules. First, on a
+congestion event, it remembers the current window as $W_{\max}$ and reduces the
+window by a factor of $\beta = 0.7$ instead of $0.5$. Second, in congestion
+avoidance, it computes the window from a cubic function of the time $t$ since the
+start of congestion avoidance:
+\begin{equation}
+  W_{\mathit{cubic}}(t) = C\,(t-K)^3 + W_{\max},
+  \qquad
+  K = \sqrt[3]{\frac{W_{\max} - \mathit{cwnd}_{\mathit{epoch}}}{C}},
+  \label{eq:bg-cubic}
+\end{equation}
+where $\mathit{cwnd}_{\mathit{epoch}}$ is the window after the reduction, windows
+are measured in segments, $t$ and $K$ are in seconds, and $C = 0.4$. $K$ is the time
+the function takes to return to $W_{\max}$. The window first grows quickly, then
+slows down as it approaches $W_{\max}$ (the concave region) and stays almost flat
+around it, because that is where the last loss happened. If no loss occurs there,
+the window grows past $W_{\max}$, slowly at first and then faster (the convex
+region), to probe for capacity that has become available. The cwnd growth can also be observed in Figure~\ref{fig:tcp_cubic}.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.6\linewidth]{figures/TCP_Cubic.png}
+    \caption{Cwnd as a function of time after loss for CUBIC (from Computer Networks: A Systems Approach~\cite{peterson2022computer})}
+    \label{fig:tcp_cubic}
+\end{figure}
+
+CUBIC changes congestion
+avoidance and the response to loss, but not the starting phase of a connection: while
+\textit{cwnd} is at most \textit{ssthresh}, it uses a slow start
+algorithm, so its window grows from the initial window as in Reno:
+RFC~9438 recommends HyStart++~\cite{rfc9406} for this phase.
+
+\paragraph{Deployment.} CUBIC replaced BIC-TCP as the default congestion control of
+Linux in kernel 2.6.19~\cite{hemminger2006cubic}, and it is still
+the default today. RFC~9438 reports that it is also the
+default in the Windows and Apple stacks and calls it the currently most widely
+deployed standard for TCP congestion control~\cite{rfc9438}. The RFC also allows
+CUBIC to be used by other transport protocols, including QUIC.
+
+\subsection{The initial window}\label{sec:bg-iw}
+
+While the slow start algorithm determines how fast the congestion window can grow, the initial window
+(IW) determines at what value the congestion window starts. For short flows, the IW set determines the number of RTTs needed for a transfer to complete, and it has been raised several times since 1988.
+
+Jacobson's slow start began with a window of one packet~\cite{jacobson1988congestion},
+and RFC~2001 specified an IW of one segment~\cite{rfc2001}. RFC~2581 raised the
+standard IW to two segments and allowed a larger value as an
+option~\cite{rfc2581}. That larger value, first proposed as an experiment in RFC~2414
+and standardized in RFC~3390 in 2002, is
+three segments, or about 4\,KB~\cite{rfc2414,rfc3390}. Deployment followed slowly: in measurements of web servers published in 2005, most servers used an IW of one or two segments, and fewer used three or four~\cite{medina2005measuring}.
+
+In 2010, Dukkipati et al.~\cite{dukkipati2010argument} argued that the IW had not changed since 2002, while
+access speeds had increased greatly, and proposed raising it to at least ten
+segments, about 15\,KB. In large-scale experiments on
+Google's servers, an IW of ten segments improved the average latency of HTTP
+responses by about 10\%, with the largest gains on paths with a high RTT or BDP,
+and increased the average retransmission rate by 0.5\%.
+Linux adopted this IW in kernel 2.6.39 and RFC~6928~\cite{rfc6928} specified it in 2013.
+
+In practice, the IW is not a single value. A scan of the IPv4 address space in
+2017 found that IWs of 1, 2, 4 and 10 segments together account for more than 97\% of
+web servers, and that among the most popular websites, more than 80\% use an IW of
+ten~\cite{ruth2017large}. Content delivery networks go further: they tune the IW per
+network, customer or content, mostly below 50 segments, but up to 100
+segments~\cite{ruth2019iw}. 
+
+\subsection{Active queue management and ECN}\label{sec:bg-ecn-aqm}
+
+Loss-based congestion control learns about congestion only when a router's buffer
+overflows. A router with a simple first-in, first-out queue drops packets only once
+its buffer is full, so until then, every packet waits behind the whole queue. Large
+buffers at the edge of the network therefore add long delays, a problem known as
+bufferbloat~\cite{gettys2012bufferbloat}.
+
+\paragraph{Active queue management.} With active queue management (AQM), a router
+drops or marks packets before its buffer is full, to keep the queue short while still
+signaling congestion to the senders. The IETF recommends its widespread
+deployment~\cite{rfc7567}. CoDel~\cite{rfc8289}, for example, controls the time that packets spend in
+the queue rather than the length of the queue: it drops or marks packets when the
+minimum queueing delay over an interval, 100\,ms by default, stays above a target of
+5\,ms. FQ-CoDel~\cite{rfc8290} also hashes flows into separate queues, serves them in
+round robin and applies CoDel to each, and it serves flows that do not build a
+queue, such as new and sparse flows, first.
+
+\paragraph{Explicit Congestion Notification.} ECN~\cite{rfc3168} lets a router signal congestion
+without dropping packets. Two bits in the IP header carry four
+codepoints: a sender marks its packets as ECN-capable with ECT(0) or ECT(1), and a
+congested router with AQM changes the codepoint to Congestion Experienced (CE)
+instead of dropping the packet. The receiver echoes the mark to the sender, which
+reacts to the congestion signal without losing the packet and
+without waiting to detect a loss. The original specification requires the response
+to CE to be the same as the response to a loss, however RFC~8311~\cite{rfc8311} relaxed this
+requirement to allow experiments, for example with a smaller reduction for marks and
+with new uses of ECT(1).
+
+\paragraph{Deployment.} Both mechanisms depend on the network. ECN only helps where
+the bottleneck runs an AQM that marks packets and where no device on the path clears
+the ECN field. In measurements from 2021 and 2022, one cloud provider and two cellular
+providers cleared, or ``bleached'', the ECN field as a matter of policy~\cite{lim2022fresh}. 
+
+% \subsection{Metrics for assessing congestion control algorithms}\label{sec:bg-metrics}
+
+% A congestion control algorithm serves two parties. The network operator wants the
+% bottleneck used efficiently and shared fairly among flows, while a user wants
+% their own transfer to finish quickly.
+
+% \paragraph{Flow completion time.} The flow completion time (FCT) of a transfer is the
+% time from its start until its last byte has been received. Dukkipati and McKeown~\cite{dukkipati2006why}
+% argue that it is arguably the most important metric for users, who want their
+% transfers to complete as quickly as possible, whereas congestion control research
+% has focused almost entirely on throughput, utilization and fairness, which matter
+% more to the operator. With typical Internet flow sizes,
+% they show that TCP Reno makes flows last much longer than necessary, often by one
+% or two orders of magnitude. 
+
+% \paragraph{Fairness.} Fairness describes
+% how the capacity of a bottleneck is divided among the flows that share it. Jain, Chiu and Hawe defined a fairness index~\cite{jain1984quantitative} for $n$ flows
+% with throughputs $x_1, \dots, x_n$:
+% \begin{equation}
+%   J = \frac{\left(\sum_{i=1}^{n} x_i\right)^2}{n \sum_{i=1}^{n} x_i^2}.
+%   \label{eq:jain-index}
+% \end{equation}
+% The index is independent of the amount of the shared resource. It equals 1 when all
+% flows receive the same throughput and falls to $1/n$ when one flow takes all of it.
+% Chiu and Jain~\cite{chiu1989analysis} showed that AIMD satisfies the sufficient conditions for converging
+% to an efficient and fair allocation regardless of the starting
+% state.
+
+% As new algorithms appeared, fairness came to be judged relative to TCP. Floyd and
+% Fall~\cite{floyd1999promoting} call a flow \emph{not TCP-friendly} if its long-term arrival rate exceeds that
+% of any conformant TCP in the same circumstances. Ware et
+% al.\ argue that the bar for deploying a new algorithm should instead be the
+% \emph{harm} it causes to existing traffic~\cite{ware2019beyond}. Harm is measured
+% against a baseline of the existing traffic running on its own, so a new algorithm
+% is not blamed when existing algorithms perform poorly because of their own
+% limitations. It also covers any performance metric, including throughput,
+% latency, loss rate and flow completion time. Current IETF guidance takes a similar
+% view~\cite{rfc9743}. A proposed algorithm must be evaluated against standard IETF
+% congestion controls, and the measure of harm is not restricted to the share of
+% capacity but also includes latency and loss. The guidance also requires an evaluation of how short flows affect long-lived flows, and of how the new algorithm affects both short-lived and
+% long-lived flows that use other common algorithms.
+
+
+\section{QUIC}\label{sec:bg-quic}
+
+QUIC~\cite{langley2017quic} is a transport protocol that runs over UDP, integrates the TLS~1.3 handshake,
+multiplexes independent streams in one connection, and encrypts almost all of its
+packets. Google launched an early version as an experiment in
+2013 and built it in user space, so that it could be deployed and changed at the pace
+of application updates. By 2017, QUIC carried over 30\% of Google's egress traffic,
+an estimated 7\% of all Internet traffic. The IETF standardized
+QUIC in 2021: RFC~9000 defines the transport~\cite{rfc9000}, RFC~9001 its use of
+TLS~\cite{rfc9001}, and RFC~9002 its loss detection and congestion
+control~\cite{rfc9002}.
+
+RFC~9002 specifies a congestion controller similar to TCP NewReno, but a sender may choose another algorithm, provided that it follows
+the IETF guidelines for congestion control over UDP. Because QUIC runs
+in user space, such an algorithm can be deployed together with an application,
+without changes to the operating system kernel.
+
+\subsection{Differences between TCP and QUIC}\label{sec:bg-quic-features}
+
+This section describes features of QUIC that are not available in TCP and could be used in congestion control algorithms made specifically for QUIC.
+
+\paragraph{Fewer round trips before the first request.} A TCP connection starts with
+a three-way handshake, which adds one RTT before data can be sent, and
+TLS~1.3~\cite{rfc8446} adds another round trip for its own handshake. An HTTPS
+request over TCP therefore leaves the client after two RTTs. QUIC combines the
+transport and cryptographic handshakes, so a new client sends its
+request after one RTT. A client that resumes an earlier connection can send its
+request in its very first flight, as 0-RTT data. The server may also
+include data in its first flight, before the handshake completes, which RFC~9000
+calls ``0.5-RTT data''; this does not change the one RTT that a new
+client waits before its request leaves. TCP Fast Open~\cite{rfc7413} can also save one RTT, but it
+is only experimental. For a short flow, these saved round trips are a
+latency gain that no TCP congestion controller can achieve. The handshake also gives the
+server an RTT sample before its first data packet, because endpoints must acknowledge
+Initial and Handshake packets immediately, so this sample contains no
+acknowledgment delay.
+
+\paragraph{Extension frames.} QUIC can be extended with new frame types, which lets
+the endpoints exchange information that the base protocol does not carry. QUIC frames
+are not self-describing, and an endpoint must treat a frame of unknown type as a
+connection error, so an extension first negotiates its frames: each endpoint
+announces in a transport parameter which extension frames it is willing to receive,
+and endpoints ignore transport parameters that they do not support~\cite{rfc9000}.
+Extension frames must be congestion controlled and must elicit an acknowledgment,
+unless they replace or supplement the ACK frame. New frame types are registered with
+IANA, and provisional registrations are available for experiments.
+Several extensions already use this mechanism: the unreliable DATAGRAM
+frame~\cite{rfc9221}, the ACK\_FREQUENCY and IMMEDIATE\_ACK frames~\cite{iyengar2026ackfrequency} are all registered with IANA already.
+
+TCP is much harder
+to extend. New functionality has to fit into TCP options, which share at most
+40~bytes of header space~\cite{rfc793}, and that space is already
+scarce. Options are also visible to the network: in
+measurements from 2011, only 80\% of the paths tested on port 80 passed TCP options
+without interference, against 96\% on an unused port~\cite{honda2011extend}. QUIC
+frames travel inside the encrypted and authenticated payload, so middleboxes can
+neither read nor modify them.
+
+\paragraph{Path state carried across connections.} A TCP host can cache path state,
+such as the RTT and congestion window of earlier connections, but only
+locally~\cite{rfc9040}. In QUIC, the server can store state in the TLS session ticket
+that the client presents when it resumes a connection~\cite{rfc9001}. RFC~9002 allows a
+resumed connection over the same network to start from the previous connection's
+smoothed RTT~\cite{rfc9002}. Careful Resume~\cite{rfc9959}, the IETF method for reusing congestion control state, limits
+the first RTT of a resumed connection to the initial window and the following jump to
+half of the saved congestion window, after which the sender validates the
+path.
+
+\paragraph{Packet numbers are never reused.} TCP retransmits lost data with the same
+sequence numbers, so an acknowledgment of retransmitted data does not reveal which
+transmission arrived. Karn's rule therefore discards RTT samples from retransmitted
+segments~\cite{karn1987improving}. A QUIC endpoint must not reuse a packet number
+within a packet number space: a lost frame is resent in a new packet
+with a new number, so each acknowledgment refers to exactly one
+transmission~\cite{rfc9002}. RTT samples are therefore unambiguous, also during loss
+recovery, and spurious retransmissions are trivially detected.
+A sample is taken only from the largest
+newly acknowledged packet of an ACK frame, and it still includes the receiver's
+acknowledgment delay and any queueing delay.
+
+\paragraph{Explicit acknowledgment delay.} A TCP receiver may delay an ACK by up to
+500\,ms after the first unacknowledged segment arrives~\cite{rfc5681}, and the sender cannot tell by
+how much, so the delay inflates its RTT samples. QUIC makes the delay explicit. Each
+endpoint announces in its transport parameters the maximum time by which it will
+delay its acknowledgments, \texttt{max\_ack\_delay}, which defaults to 25\,ms~\cite{rfc9000}, and
+every ACK frame carries an ACK Delay field, the time for which the receiver held the
+acknowledgment of the largest acknowledged packet. RFC~9002 subtracts this delay from
+the RTT sample, capped at \texttt{max\_ack\_delay} once the handshake is confirmed,
+but never lowers a sample below the minimum RTT. The field is self-reported and
+covers only the largest acknowledged packet, but it separates the receiver's delay
+from the network's. The sender also adds \texttt{max\_ack\_delay} to its probe timeout
+(PTO), which in QUIC replaces TCP's retransmission timeout (RTO) and tail loss probe~\cite{rfc9002}.
+The PTO follows the RTO computation of RFC~6298, but uses \texttt{max\_ack\_delay}
+instead of a fixed minimum:
+\begin{equation}
+  \mathit{PTO} = \mathit{smoothed\_rtt} + \max(4 \cdot \mathit{rttvar},\
+  k_{\mathit{Granularity}}) + \mathit{max\_ack\_delay}.
+  \label{eq:bg-pto}
+\end{equation}
+When the PTO expires without an acknowledgment, the sender sends one or two probe
+packets. Unlike an RTO, an expired PTO does not reset the congestion window, because
+the loss of a single packet at the end of a flow does not indicate persistent
+congestion; QUIC reduces the window to its minimum only when it declares persistent
+congestion.
+
+The value of \texttt{max\_ack\_delay} is set by the endpoint that sends the
+acknowledgments. In a download, the
+client chooses it, and the server cannot change it in the base protocol. A client
+that advertises a small value shortens the server's PTO, so a packet lost at the end
+of a short flow is recovered sooner, at the cost of more acknowledgments.
+
+
+
+\paragraph{Many, irrevocable acknowledgment ranges.} A TCP SACK~\cite{rfc2018} option holds at most
+four blocks, or three if timestamps are used, and a receiver may renege on data it has
+already acknowledged selectively. A QUIC ACK frame can carry many ACK
+ranges, limited only by the packet size, and acknowledgments can never be
+revoked~\cite{rfc9002}. The sender therefore knows exactly which packets have
+arrived and how many bytes are still in flight. Loss itself is still inferred: a
+packet is declared lost when a packet sent at least three packets later is
+acknowledged, or after a time threshold of 9/8 of the RTT, and a
+declared loss may later turn out to be spurious.
+
+\paragraph{Richer ECN feedback.} With classic ECN, a TCP receiver echoes congestion marks with a single
+ECN-Echo flag, and the sender reacts at most once per window of data, about once per
+RTT~\cite{rfc3168}. A
+QUIC ACK frame can carry cumulative counts of the packets received with each ECN
+codepoint, ECT(0), ECT(1) and CE, separately for each packet number
+space~\cite{rfc9000}. Packets marked CE should be acknowledged immediately, and each
+endpoint validates the counts on every path and disables ECN on a path that
+corrupts them. The counts tell a sender which fraction of its packets
+was marked in each round. This supports a response proportional to the extent of
+congestion and an exit from startup before any packet is lost. TCP can now also
+receive more than one ECN signal per RTT, with Accurate ECN~\cite{rfc9768}.
+
+The main limitation of ECN in QUIC is deployment,
+and the main obstacle are the servers. In 2023, only 0.22\% of QUIC
+domains passed ECN validation~\cite{sander2023ecn}. Only 5.6\% of the domains
+reported the ECN codepoints of received packets back to the client at all. Large
+providers such as Cloudflare and Fastly did not, although no interference was visible
+on the path, and Cloudflare supports ECN over TCP, which points to QUIC stacks that
+do not implement ECN. Of the domains that did report the codepoints, 96\% then failed
+validation. In 65\% of these failures, the server reported fewer ECN-marked packets
+than were sent, which the authors attribute mostly to bugs in the QUIC stacks. In
+31\%, it reported ECT(1) instead of the ECT(0) codepoint that was sent, caused either
+by routers that rewrite the codepoint or by stacks that confuse the
+two. QUIC is strict about the ECN counts: it compares the counts with what it sent and disables ECN on any mismatch.
+
+\paragraph{Control over acknowledgment frequency.} In the base protocol, as in TCP,
+the receiver decides when to acknowledge. It should send an ACK after receiving at
+least two ack-eliciting packets, and it must not delay an acknowledgment by more than
+its \texttt{max\_ack\_delay}. It must acknowledge Initial and Handshake packets
+immediately, and it should acknowledge immediately when packets arrive out of order or
+are marked CE~\cite{rfc9000}. Control by the sender comes from the QUIC
+acknowledgment frequency extension~\cite{iyengar2026ackfrequency}. Its
+ACK\_FREQUENCY frame lets the sender set how many ack-eliciting packets the receiver
+may receive before acknowledging, the maximum acknowledgment delay it requests, and
+the reordering threshold. Its IMMEDIATE\_ACK frame asks the receiver to acknowledge
+at once.
+
+Encryption also protects the acknowledgments themselves. TCP acknowledgments are
+visible to the network, and on wireless and satellite links middleboxes thin or
+filter them~\cite{custura2023reducing}. QUIC carries acknowledgments inside its
+encrypted payload, so ACK manipulation is impossible~\cite{rfc9312}. 
+
+\section{Flow sizes in Internet traffic}\label{sec:bg-traffic}
+
+Measurements taken on different networks over more than two decades agree on two
+points: most flows carry few bytes, and most bytes are carried by a small number of
+large flows. Table~\ref{tab:bg-flow-sizes} summarizes the studies used in this
+section.
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{Measurements of flow sizes.}
+  \label{tab:bg-flow-sizes}
+  \begin{tabular}{>{\raggedright\arraybackslash}p{0.19\linewidth}
+                  >{\raggedright\arraybackslash}p{0.29\linewidth}
+                  >{\raggedright\arraybackslash}p{0.40\linewidth}}
+    \toprule
+    Study & Vantage point and period & Key result \\
+    \midrule
+    Zhang et al.~\cite{zhang2002characteristics} & 8 packet traces of access and
+      peering links, 2002 & Over 84\% of flows under 100\,KB; large, fast flows
+      carry at least 60\% of bytes \\
+    Bauer et al.~\cite{bauer2021evolution} & CAIDA Tier-1 backbone links,
+      2008--2019, over 2.5 billion TCP flows & About 85\% of flows carry
+      100\,B--10\,kB; largest 1\% carry about 89\% of bytes \\
+    Jurkiewicz et al.~\cite{jurkiewicz2021flow} & University uplink, 30 days in
+      2015, 4 billion flows & 92\% of TCP flows carry at most 16\,KiB and 1.2\% of
+      TCP bytes \\
+    Luxemburk et al.~\cite{luxemburk2023cesnet} & National research network
+      backbone, 2022, 153 million QUIC flows & 47.5\% of QUIC flows carry under
+      10\,KB; 98.0\% under 1\,MB \\
+    Cloudflare~\cite{cloudflare2025connections} & CDN servers, 1\% sample of TCP
+      connections, 2025 & Median connection receives 4.8--6\,KB from the server;
+      90th percentile 51--146\,KB \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Flow sizes.} Zhang et al.\ found that more than 84\% of the flows in each
+of their eight packet traces were smaller than 100\,KB, while the few flows that
+were both large and fast carried at least 60\% of the
+bytes~\cite{zhang2002characteristics}. More recent data show that the pattern
+has persisted. In more than 2.5 billion TCP flows from CAIDA traces of Tier-1
+backbone links taken between 2008 and 2019, Bauer et al.\ found that about 85\% of
+the flows carry between 100\,B and 10\,kB of payload, while the largest 1\% of flows
+carry about 89\% of the bytes~\cite{bauer2021evolution}. In 4 billion flows
+collected over 30 days at a university uplink, Jurkiewicz et al.\ found that 92\% of
+TCP flows carry at most 16\,KiB and together account for only 1.2\% of the TCP
+bytes, while flows larger than 1\,MiB are 0.66\% of the TCP flows but carry 91\% of
+the TCP bytes~\cite{jurkiewicz2021flow}.
+
+\paragraph{QUIC traffic.} The flow sizes of QUIC traffic have been studied far less
+than those of TCP, although QUIC already carries a large share of web traffic: in
+2025, HTTP/3, which runs over QUIC, accounted for 21\% of the requests to
+Cloudflare~\cite{cloudflare2025radar}. The closest source that studies QUIC traffic is the CESNET-QUIC22
+dataset~\cite{luxemburk2023cesnet}, which contains 153 million QUIC flows observed on
+the backbone of CESNET2, the Czech national research and education network, between
+31 October and 27 November 2022. Of these flows, 47.5\% carry less than 10\,KB in
+both directions together, 98.0\% carry less than 1\,MB, and 59.2\% consist of fewer
+than 30 packets. QUIC flows therefore follow similar patterns as TCP flows: most of
+them carry few bytes.
+
+\paragraph{Web traffic} The web shows why these flow sizes matter for
+congestion control. A median web page is large, about 2.2--2.4\,MB, but it is fetched
+as 72--77 requests, mostly for small objects: the median image is 8\,KB and the
+median JavaScript file is smaller than 5\,KB~\cite{httparchive2025pageweight}. The
+connections that carry these requests are small as well. In a 1\% sample of the TCP
+connections to Cloudflare's servers in October 2025, which excludes HTTP/3, the median
+connection received only 4.8\,KB from the server over HTTP/1.x and 6\,KB over HTTP/2,
+the 90th percentiles were 51\,KB and 146\,KB, and the median connection carried a
+single request~\cite{cloudflare2025connections}.
+
+\paragraph{Congestion control for web traffic} Most web transfers end while the
+sender is still in slow start. Cardwell et al.\ observed that most TCP flows are so
+short that they often spend their entire lifetime in slow start, without suffering a
+single loss~\cite{cardwell2000modeling}. Dukkipati et al.\ report the same for web
+connections: the majority finish before exiting slow start, so their latency is
+dominated by the number of RTTs that slow start takes~\cite{dukkipati2010argument}.
+
+Compared with the windows that congestion control works with, these transfers are
+small. At least half of the connections to Cloudflare's servers fit into the initial
+window, and 90\% of the HTTP/1.x connections are smaller than the median BDP of
+Cloudflare's connections, about 77\,KB~\cite{cloudflare2025connections}. A flow that
+fits into the initial window completes one RTT after the handshake, whatever the CCA
+does, and a flow smaller than the BDP ends before its window can fill the path.
+
+For a flow larger than the initial window, the number of rounds depends on how fast
+the window grows. A sender that starts with an initial window of $\mathit{IW}$ bytes
+and doubles its window every RTT needs
+\begin{equation}
+  n = \left\lceil \log_2\!\left(\frac{S}{\mathit{IW}} + 1\right) \right\rceil
+  \label{eq:bg-ss-rounds}
+\end{equation}
+rounds to send $S$ bytes without loss. A 100\,KB transfer with a 15\,KB initial
+window therefore needs three rounds, even on a path whose BDP would let it finish in
+one.
+
+Web transfers therefore fall into three groups. The smallest requests fit into the
+initial window, and no CCA can make them faster: they complete one RTT after the
+handshake, so only fewer handshake round trips or a shorter RTT reduce their latency.
+Large transfers, much larger than the BDP, spend only a small part of their lifetime
+in startup, so their FCT depends mainly on the throughput in steady state. Between
+them are medium-sized flows, which spend most or all of their lifetime in startup. For these flows, reaching
+the BDP in as few rounds as possible directly reduces the number of RTTs, and
+therefore the FCT, provided that the sender does not overshoot the BDP and cause
+losses that take further round trips to recover.
+
+
+\paragraph{Consequences of delay} On the web, these RTTs
+add directly to the delay a user sees, and that delay has a measurable cost. In a
+controlled experiment at Bing, which slowed the search results page by 100 or
+250\,ms for a subset of users, every 100\,ms of speedup increased revenue by
+0.6\%; Amazon similarly reported that a slowdown of 100\,ms decreased its sales by
+1\%~\cite{kohavi2014seven}. At Google, adding 100 to 400\,ms of delay to the search
+results reduced the number of daily searches per user by 0.2 to 0.6\%, and after a
+delay of 400\,ms, the effect persisted even once the delay was
+removed~\cite{brutlag2009speed}.

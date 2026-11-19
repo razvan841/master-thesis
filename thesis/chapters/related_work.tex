@@ -1,0 +1,471 @@
+\chapter{Related Work}\label{chap:related-work}
+
+This chapter reviews advances in congestion control.
+Section~\ref{sec:rw-tcp} covers the improvements proposed for congestion control in
+TCP. Section~\ref{sec:rw-quic} covers the
+congestion control work done for QUIC, and separates algorithms that are only ported over from TCP from those that use features TCP does not have.
+
+\section{Advances in congestion control}\label{sec:rw-tcp}
+
+\subsection{Improving startup}\label{sec:rw-startup}
+
+Slow start begins with the initial window and doubles the congestion window every RTT,
+so it needs about $\log_2(\mathit{BDP}/\mathit{IW})$ rounds to fill a path. This causes two problems. A flow that ends within these
+rounds never uses the capacity of the path, and a flow that continues overshoots it:
+the window keeps doubling until the first loss is detected, about one RTT after it
+occurred, so many packets can be lost at once~\cite{ha2011taming}.
+
+Flach et al.\ analysed billions of
+TCP connections to Google's services, and found that connections without
+loss complete close to the ideal latency of one RTT, while transfers with loss take
+five times longer on average, and nearly 10\% of the connections saw at least one
+loss~\cite{flach2013reducing}. Loss is expensive mainly because of how it is
+recovered: 77\% of the losses were recovered only by a retransmission timeout rather
+than by fast recovery, and the median timeout was six times the
+RTT.
+
+
+\paragraph{Better exit.} A first group of algorithms keeps the exponential growth of
+slow start and changes only when it ends. Leaving slow start before the window
+overshoots the BDP avoids a burst of losses, but the window grows no faster than
+before.
+
+Hybrid Slow Start (HyStart)~\cite{ha2008hystart,ha2011taming} uses two signals that indicate when the window is
+approaching the BDP. The first is the length of the
+ACK train of a round. The ACKs for a window sent back to back return spaced by
+the bottleneck, so the time between the first and the last ACK of the train grows
+with the window. The second is the RTT: if the RTTs measured at the start of a round
+rise above the minimum RTT seen so far, a queue is building. When either signal fires,
+HyStart sets \textit{ssthresh} to the current window and moves to congestion
+avoidance, without waiting for a loss. Linux has enabled HyStart by default with CUBIC
+since kernel 2.6.29. In practice, the ACK train signal proved unreliable: ACK compression distorts the spacing of the ACKs, so it often fails to detect congestion early~\cite{rfc9406}.
+
+HyStart++~\cite{rfc9406} keeps only the delay
+signal. When the minimum RTT of a round exceeds that of the previous
+round by more than an eighth, with the threshold clamped between 4 and 16\,ms, the
+sender enters Conservative Slow Start, in which the window grows at a quarter of the
+rate of slow start. If the RTT falls back, the rise is treated as spurious and slow
+start resumes; otherwise, the sender moves to congestion avoidance after five rounds.
+
+SEARCH~\cite{kachooei2023search} replaces the delay signal with the delivery rate. It
+tracks the delivery rate over a sliding window and exits slow start when the rate has
+not increased by the amount that a doubling window should produce. It was designed for
+satellite links, where slow start often exits too early, which limits throughput, or
+too late, which causes losses. 
+
+\paragraph{Faster growth.} A second group keeps the structure of slow start, but lets
+the window grow faster than doubling while the flow is still far from the capacity of
+the path.
+
+Paced Chirping~\cite{misund2019paced} sends \emph{chirps}, trains of packets
+with decreasing gaps between them, to estimate the available capacity
+quickly. The sender lets the queue drain between chirps, so the
+queue never holds more than a few packets, which avoids the overshoot of slow start.
+Because the gaps shrink within a chirp, its packets probe increasing rates, and the
+sender estimates the available capacity from where their queueing delay starts to
+rise. It spreads several chirps over each RTT and can probe a
+rate without committing to send at it, so it builds confidence in its estimate before
+it raises its window, and it leaves start-up once the data in flight approaches the
+estimated BDP.
+
+SUSS~\cite{arghavani2024suss} is a sender-side addition to CUBIC's slow
+start. At the end of each round, it uses the ACK train it has just received to
+predict whether HyStart's conditions for continuing exponential growth will still
+hold in the next round. If they will, it sends additional data within the current
+round, which raises the growth factor of the window to four, typically during only
+the first one or two rounds. The extra packets are paced, so that they do not create
+bursts or disturb the ACK-train measurements that HyStart relies on, and the
+acceleration is used only while the window is still much smaller than the flow's
+fair share. In real-world experiments, SUSS reduced the FCT by more than 20\% for
+flows smaller than 5\,MB on paths with RTTs above 50\,ms.
+
+% An independent replication on AWS found average improvements of 27--44\% on wired paths, also with concurrent background traffic, but showed that the RTT alone
+% does not predict how much SUSS helps. Applied to BBR's startup, which is already more
+% aggressive, the same principle gave only 1--9\% improvement~\cite{gatti2026replicating}.
+
+Nimble Start~\cite{nimblestart} ramps up using the advertised receive window, but never
+beyond its current estimate of the BDP. It splits each round into two halves: a slower
+first half and a faster second half, which measures the new estimated BDP from the returning ACK train. It leaves startup
+when the estimate stops growing notably for a few rounds. To distinguish random losses from congestion
+losses, it uses BBR's criterion, a loss rate above 2\% with at least six discontiguous
+losses in a round. After a congestion loss, it scales its estimate by 0.7 and keeps
+probing, matching the Cubic and BBR configurations. Nimble Start manages to complete short and mid-length flows faster than Cubic, BBR, SUSS and Paced Chirping, benefiting most with large BDPs, while causing no packet loss when the flow is alone.
+
+\paragraph{Receiver-informed probing.} One design moves part of the
+measurement to the receiver. In Receiver-Optimized Startup (ROS)~\cite{ros}, the sender
+marks probe packets with a header bit, and the receiver measures their arrival rate
+over probe windows of 20\,ms. Measured at
+the receiver, the rate is not distorted by suppressed or delayed acknowledgments. The
+receiver returns its estimate through the advertised receive window field. After
+the initial window, the sender enters a cautious phase at 40\% of this first estimate
+and keeps probing until the increase stagnates or a congestion loss occurs.
+
+\paragraph{Bypassing slow start.} Another group of algorithms skips slow start
+altogether and sends at a high rate from the first RTT. Jump
+Start~\cite{liu2007jumpstart} paces all the data it has queued, up to the receiver's
+advertised window, over the RTT measured during the handshake, and leaves the rest of
+TCP's congestion control unchanged. Its authors note that this
+mainly helps medium-sized transfers, which take longer than one RTT but are short
+enough that slow start makes up a large part of their lifetime. The price is more
+loss: in their simulations, Jump Start's loss rate was more than four times that of
+slow start without competing connections, and about twice as high when connections
+competed.
+
+Halfback~\cite{li2015halfback} takes the same approach, but tries to mitigate the packet loss caused by the aggressive start. It also begins with an aggressive, paced first round, but in
+the following RTT, it proactively retransmits packets to protect itself against
+losses, which lets it recover from them quickly. Its authors
+report lower latency than any of the earlier schemes they compared, while harming
+competing flows significantly less, and Halfback is TCP-friendly and needs changes
+only at the sender. The cost is overhead: it retransmits nearly
+half of the packets of its startup phase.
+
+
+
+\paragraph{Reusing state from earlier connections.} A connection can also skip part of
+startup by reusing what earlier connections have learned. RFC~9040~\cite{rfc9040} describes how a TCP
+host can share connection state. With \emph{temporal sharing}, a new
+connection to a host initializes its RTT, RTT variance, slow start threshold and
+congestion window from a cache of earlier connections. With \emph{ensemble sharing},
+concurrent connections share this state.
+
+Stateful-TCP~\cite{guo2020stateful} goes further and reuses the bandwidth itself: it
+uses the bandwidth that a previous flow to the same destination measured to ramp up
+the next flow immediately, without probing in slow start. Applied to CUBIC, it reduced
+the FCT by 37.5\% and increased throughput by more than 50\% in Internet experiments
+with more than 1\,000 clients.
+
+
+\subsection{Model-based congestion control}\label{sec:rw-model}
+
+\paragraph{Limits of loss-based control.} Loss-based algorithms such as Reno and CUBIC
+reduce their rate only when packets are lost, which has
+two consequences. When bottleneck buffers are large, the
+algorithms keep them full and add queueing delay to every packet that shares the
+bottleneck, a problem known as bufferbloat~\cite{gettys2012bufferbloat}. When buffers
+are small, or losses are not caused by congestion, they reduce their rate
+unnecessarily. The BBR specification provides an example for the second case: for CUBIC to sustain
+10\,Gbit/s over a 100\,ms RTT, the loss rate must stay below 0.000003\%, and a loss
+rate of 1\% on the same RTT is at most 3\,Mbit/s~\cite{cardwell2026bbrdraft}.
+
+\paragraph{BBR.} BBR~\cite{cardwell2016bbr} (Bottleneck Bandwidth and Round-trip propagation time) builds an
+explicit model of the path from two estimates: the maximum recent delivery rate, which
+estimates the bottleneck bandwidth, and the minimum recent RTT, which estimates the
+propagation delay. It paces its packets at a rate derived from
+the bandwidth estimate and limits the data in flight to a multiple of the estimated
+BDP, so that it fills the path without building a long queue. The current IETF draft
+specifies the third version, BBRv3, and is
+intended for publication as an Experimental RFC~\cite{cardwell2026bbrdraft}.
+
+BBR's own startup still has exponential growth. In its Startup state, the sender uses
+a pacing gain of $4\ln 2 \approx 2.77$, the smallest gain that doubles the sending rate
+every round, and needs $O(\log_2 \mathit{BDP})$ rounds to find the
+bandwidth. It leaves Startup when the delivery rate has
+grown by less than 25\% for three rounds, or when the loss rate of a round exceeds 2\%
+with at least six loss events~\cite{cardwell2026bbrdraft}.
+
+BBR is widely deployed: it is the default congestion control of YouTube, and Google
+has used it for a large share of its traffic, both in its data centers and on its WAN,
+since 2017~\cite{ware2019modeling,zeynali2024promises}. Its original publication
+showed that it can outperform CUBIC in some environments~\cite{cardwell2016bbr}, and
+independent studies have since tested it more. Cao et al.\ found that BBR achieves
+higher throughput than loss-based algorithms on paths with shallow buffers, despite
+retransmitting much more, while loss-based algorithms such as CUBIC do better with deep
+buffers~\cite{cao2019when}. Fairness towards CUBIC has remained
+its main weakness. Measurements showed a single BBR flow taking a fixed 40\% of the
+capacity even when competing with up to 16 CUBIC or Reno flows~\cite{ware2019modeling}. Google has revised BBR twice in response, but even BBRv3
+struggles to share bandwidth evenly with CUBIC across a wide range of network
+conditions, and all versions of BBR share bandwidth unfairly between flows whose RTTs
+differ substantially~\cite{zeynali2024promises}.
+
+\paragraph{Learning-based congestion control.} Several designs replace classic congestion
+control rules with learned or optimized ones. Remy~\cite{winstein2013remy} generates the rules offline: the
+designer specifies prior assumptions about the network and an objective, such as high
+throughput and low queueing delay, and Remy produces endpoint rules that try to
+achieve it. In ns-2 simulations~\cite{ns2}, the generated algorithms
+outperformed CUBIC, Compound~\cite{tan2006compound} and Vegas~\cite{brakmo1994vegas}, but their performance depended on how well the
+real conditions matched the assumptions given at design time.
+
+PCC~\cite{dong2015pcc} learns online
+instead: the sender continuously runs short experiments at different rates and moves
+towards the rate that yields a higher value of a utility function of throughput and
+loss. PCC Vivace~\cite{dong2018vivace} builds upon PCC by adding latency to the utility function. Pantheon~\cite{yan2018pantheon} provides a testbed of emulated paths
+calibrated against real Internet paths, and was used to train Indigo, a controller that
+learns from examples.
+
+Aurora~\cite{jay2019aurora} applies deep reinforcement learning
+to the PCC framework. In each monitoring interval, a small neural network maps a
+history of statistics from recent intervals: the gradient of the latency, the
+ratio of the current latency to the minimum, and the ratio of sent to acknowledged
+packets, to a change of the sending rate. It is trained in simulation with a reward
+that favors throughput and penalizes latency and loss. Although Aurora was trained
+only on links of 1.2 to 6\,Mbit/s, it nearly fully used links from 1 to
+128\,Mbit/s, with latency far below CUBIC and similar to PCC Vivace, and it kept close
+to full throughput at higher random loss rates than both.
+
+Orca~\cite{abbasloo2020orca} combines CUBIC
+with a reinforcement-learning agent that adjusts the window at a coarser timescale,
+to reduce overhead and to perform well in network conditions not seen during
+training. Sage~\cite{yen2023sage} learns a policy offline from the behavior of
+existing heuristic algorithms, and Astraea~\cite{liao2024astraea} uses multi-agent
+reinforcement learning to optimize fairness, convergence speed and stability between
+competing flows. These designs optimize the control of the
+sending rate over the lifetime of a flow, and many of them decide once per monitoring
+interval, which lasts on the order of an RTT. 
+
+Learning-based congestion control also has drawbacks that have so far limited its use.
+A learned policy optimizes its own objective,
+which can disrupt fairness, fast convergence and stability between competing
+flows~\cite{liao2024astraea}. The authors of Aurora warn that their agent might not be
+friendly to TCP, and that an agent trained against TCP could even learn to cause
+losses on purpose, to make TCP back off~\cite{jay2019aurora}. Additionally, the decisions of
+a neural network are hard to interpret, which makes it difficult to show that a
+learned controller is safe to deploy. Formal verification of Aurora's policy~\cite{eliyahu2021verifying} has
+exposed concrete scenarios in which basic requirements are violated. Under excellent
+network conditions, with latency close to its minimum and no loss, the policy could
+keep decreasing its sending rate until it reached the minimum and stayed there. On a
+link with a shallow buffer and high, fluctuating loss, it would keep its sending rate
+unchanged instead of reducing it.
+
+
+\subsection{Network-assisted congestion control}\label{sec:rw-network}
+
+Network-assisted algorithms use signals from the routers or switches on the path,
+instead of or in addition to loss and delay.
+
+\paragraph{Congestion control for data centres} DCTCP~\cite{rfc8257} reduces its window in
+proportion to the fraction of packets that switches mark, instead of reacting to a mark
+as to a loss. This keeps queues short in data centers, but DCTCP must not be used on
+the public Internet without additional measures, because it takes a larger share of
+the capacity than conventional TCP.
+
+HPCC~\cite{li2019hpcc} sets the
+window from the queue length and link load that switches add to each packet, so that
+flows can start at line rate while queues stay near zero. Bolt~\cite{arslan2023bolt}
+uses programmable switches to react to congestion in less than an RTT and to hand the
+bandwidth of finishing flows to others at once, which reduced the 99th-percentile FCT
+by up to three times compared with HPCC.
+
+\paragraph{Richer explicit feedback.} ABC~\cite{goyal2020abc} lets routers on wireless
+links mark each packet as accelerate or brake within the existing ECN field, to
+steer senders to a target rate. On Wi-Fi, it achieved 30--40\% higher throughput than
+CUBIC with CoDel at similar delays.
+
+\paragraph{Router-assisted startup.} Quick-Start~\cite{rfc4782} lets the routers on a path approve a
+fast start directly. The sender puts a requested rate in an IP option,
+and each router on the path approves, reduces or rejects it. If all routers approve,
+the sender may send at up to the approved rate for one window of data, after which its
+normal congestion control resumes. A request that crosses a router, IP tunnel or MPLS
+path that does not support Quick-Start is detected, and the sender then uses its
+default congestion control.
+
+\paragraph{Limits for Internet paths.} All of these designs depend on support from the
+network. DCTCP, HPCC and Bolt run only in data centers, ABC needs ABC routers at the
+wireless bottleneck to give its benefits, and Quick-Start needs every router on the path to be compliant.
+
+
+% \subsection{Coordinating flows and low-priority congestion control}\label{sec:rw-coordination}
+
+% \paragraph{Sharing congestion state between connections.} The Congestion Manager~\cite{balakrishnan1999cm} is a
+% module in the host that manages congestion for all of its applications and
+% transports. It combines a window-based controller, a
+% scheduler that divides the bandwidth among flows, and feedback from receivers, and
+% applications use it through an API. Connections to the same destination share
+% congestion state, which lets a new connection use what earlier connections have
+% learned instead of going through slow start again. ctrlTCP\cite{islam2018ctrltcp}
+% couples the congestion controllers of the TCP connections leaving one sender, also
+% when they go to different destinations through a shared bottleneck, such as a home
+% uplink~. It lets applications set precise shares of the
+% bandwidth, and it reduces queueing delay, loss and the completion time of short flows.
+% MPAT~\cite{singh2004mpat} keeps one ordinary AIMD control loop per flow, so that a group of $N$ flows takes
+% the fair share of $N$ TCP flows, and then shifts acknowledgments and bandwidth between
+% their windows to give each flow a chosen share.
+
+% \paragraph{Scavengers.} A scavenger is a congestion control for background traffic,
+% which only uses capacity that other flows leave unused. TCP-LP~\cite{kuzmanovic2003tcplp} uses one-way delay as
+% an early congestion signal, before TCP would see a loss; the sender then halves its
+% window and backs off further if the signal repeats. TCP Nice~\cite{venkataramani2002nice}
+% extends TCP Vegas with a more sensitive congestion detector, a multiplicative
+% reduction when the RTT rises, and windows smaller than one packet, and it provably
+% bounds the interference with foreground flows in a simplified network
+% model. LEDBAT~\cite{rfc6817} measures one-way delay and keeps the
+% queueing delay it causes below a target of at most 100\,ms, so it yields to standard
+% TCP flows. PCC Proteus~\cite{meng2020proteus} observes that LEDBAT often fails to yield and uses
+% the deviation of latency as a sign of competition; within the PCC framework, it can act
+% as a scavenger, as a primary protocol, or in hybrid modes between the
+% two.
+
+
+\section{Congestion control in QUIC}\label{sec:rw-quic}
+
+\subsection{TCP algorithms ported to QUIC}\label{sec:rw-quic-ports}
+
+RFC~9002~\cite{rfc9002} specifies that
+sender may use any congestion controller algorithm, provided that it follows the guidelines for
+congestion control over UDP~\cite{rfc8085}. In practice, most QUIC stacks
+re-implement standard TCP algorithms, mainly CUBIC, Reno and BBR~\cite{mishra2023cambrian}. A port from TCP is not exact however: QUIC's acknowledgments, loss detection and timers differ
+from TCP's, so each stack has to decide how to map
+the rules of an algorithm onto them, and each also chooses its own parameters, pacing
+and defaults. Measurements show that these choices matter:
+\begin{itemize}
+  \item Kakhki et al.~\cite{kakhki2017long} found that Google's early QUIC, using CUBIC, took about twice the
+    bandwidth of a competing TCP CUBIC flow, because its CUBIC implementation grew the
+    window more aggressively and more often.
+  \item Marx et al.\cite{marx2020same} compared 15 IETF QUIC implementations and found large differences
+    in flow control, congestion control, 0-RTT, multiplexing and packetization, and
+    concluded that most implementations were not yet fully optimized or
+    validated~.
+  \item Mishra et al.~\cite{mishra2023cambrian, mishra2022speciation} developed the first congestion control benchmarking tool for QUIC stacks, QUICbench and compared the throughput and delay of QUIC implementations of
+    standard algorithms with the Linux kernel implementations and found significant
+    deviations. In 11 stacks, most
+    implementations of CUBIC, Reno and BBR behaved like the kernel versions in shallow
+    buffers but less so in deep buffers. Five implementations deviated strongly, which
+    can make them unfair to other flows, and some deviations came from TCP features
+    outside the algorithm itself, such as HyStart, that the QUIC stacks did not
+    implement.
+  \item Kempf et al.~\cite{kempf2025quicsteps} showed that QUIC stacks implement pacing differently, and that
+    user-space timers, system call overhead and operating system scheduling make
+    precise pacing difficult.
+  \item Mücke et al.~\cite{mucke2025waiting} observed that large providers configure significantly different
+    maximum numbers of retransmissions and timeouts in their QUIC
+    deployments.
+  \item Sidhu and Bentaleb~\cite{sidhu2026video} found that the same congestion control algorithm in
+    different QUIC implementations leads to significantly different quality of
+    experience for video streaming.
+\end{itemize}
+The behavior and performance of a congestion control mechanism in QUIC therefore depends on the stack that it runs in, and a
+comparison of algorithms is only meaningful within the same stack.
+
+\paragraph{TCP ideas implemented in QUIC.}  Because QUIC runs in user space, new congestion control can be
+implemented and tested in a QUIC stack far more easily than in an operating system
+kernel. Most of these algorithms, however, are
+designed around signals that TCP provides as well.
+
+Two TCP startup mechanisms have been brought to QUIC.
+SEARCH~\cite{cronin2024search} was implemented in an open-source QUIC library and evaluated over a geostationary satellite link, where it exited
+slow start before any loss in most cases and improved throughput compared with the
+baseline. Fischer et al.\ implemented Careful Resume~\cite{fischer2025neqo} in Mozilla's
+Neqo stack and evaluated it on emulated paths and on real fiber, 5G and satellite
+paths. It reduced the time to the last byte by several RTTs, and by 12 RTTs on a
+1\,Gbit/s geostationary satellite path with an RTT of 600\,ms, without significantly
+harming flows that shared the bottleneck. The authors also note that the pacing that
+Careful Resume requires is challenging for UDP-based protocols such as QUIC. Unlike
+TCP, which is paced inside the kernel, a QUIC stack runs in user space and has to pace
+its packets itself, so the latency and jitter of system calls and operating system
+scheduling make the gaps between packets less precise~\cite{kempf2025quicsteps}.
+
+QUIC Delay Control (QUIC-DC)~\cite{mascolo2025quicdc}
+estimates the one-way queueing delay of a connection to react to congestion early,
+combines this with the TCP Westwood+~\cite{mascolo2001westwood} algorithm, and reduced losses and end-to-end delay compared with QUIC's CUBIC, BBRv2, NewReno and Westwood+, while preserving utilization.
+
+Learning-based designs have been implemented in QUIC as well. PBQ~\cite{zhang2023pbq} combines BBR
+with a reinforcement-learning agent: the agent sets the congestion window, while BBR
+sets the pacing rate, and the combination achieved higher throughput and lower RTT
+than QUIC with CUBIC or BBR. AERO~\cite{sidhu2026aero} is a learned congestion
+controller designed to be integrated into any QUIC stack without extensive engineering
+effort. For video on demand, it improved video quality (VMAF) by about 13\% and reduced
+rebuffering by 30\% compared with existing approaches, and for low-latency live
+streaming, it improved VMAF by about 12\% with 65\% fewer stalls.
+
+Finally, Multipath QUIC lets one connection use several paths at once, for example
+WiFi and LTE~\cite{deconinck2017mpquic}. XLINK~\cite{zheng2021xlink} applied it to short
+videos, where it uses the video quality of experience perceived by the user
+to control multipath scheduling.
+
+\subsection{QUIC-specific improvements}\label{sec:rw-quic-specific}
+
+Few works use features that TCP lacks, and most of them are not really congestion control
+algorithms. They change what the controller knows when a connection starts, how losses
+are detected and repaired, how often acknowledgments arrive, or how the capacity of a
+connection is shared.
+
+\paragraph{Path state in an extension frame.} The BDP\_FRAME~\cite{kuhn2021bdpframe} extension lets a QUIC
+connection remember the characteristics of a path and use them when a session is
+resumed. The server sends the client a frame with the RTT, the
+congestion window and the client's IP address, and the client returns it when it
+resumes the connection, so the server can start from the saved values. The address
+lets the server detect whether the client's network has changed.
+
+\paragraph{Client-provided hints.} Rüth et al.~\cite{ruth2019blitz} use the extensibility of QUIC to let a web client send the server an estimate of its bandwidth. The
+server uses it to set the congestion window of a new connection, so the connection
+skips slow start. The approach accepts some losses in exchange for a much shorter
+FCT. For a typical DSL client, a 2\,MB video chunk loaded almost twice as fast, and in
+the worst case, losses increased the transferred volume by 12\%.
+
+\paragraph{Application information.} Wira~\cite{wu2024wira} sets the initial window and the initial rate
+of a live-streaming connection from information about that
+connection. It parses the first video frame and sizes the initial
+window to fit it. Clients report quality-of-service metrics from earlier sessions in a
+Transport Cookie, which the server uses to set the initial rate without storing state
+for each client. Implemented on QUIC and deployed in commercial services, it reduced
+the average time to complete the first frame by 10.6\%, and the 90th percentile by
+16.7\%.
+
+\paragraph{Loss repair.} QUIC-FEC~\cite{michel2019quicfec} adds a forward erasure correction frame to QUIC, so that lost packets can be rebuilt from redundant data without waiting for a
+retransmission. To keep the loss signal for the congestion
+controller, it distinguishes packets that were received from packets that were
+recovered. FEC reduced the download time of smaller files on paths with high loss and
+long delays, mainly by avoiding retransmission timeouts, but its overhead slowed down
+long transfers and transfers on paths with little loss. FlEC~\cite{michel2023flec}
+turns this into a framework inside QUIC, in which an application selects its
+reliability mechanism, from pure retransmissions to different forms of FEC, and adapts
+loss recovery and stream scheduling to its needs. For bulk transfers, file transfers
+with restricted buffers and delay-constrained messages, it achieved lower latency than
+QUIC's standard reliability mechanisms.
+
+\paragraph{Acknowledgment frequency.} Custura et al.~\cite{custura2023reducing} showed that QUIC can send far
+fewer acknowledgments without losing throughput, and proposed a policy for the
+acknowledgment frequency extension: one
+acknowledgment every ten packets, at least one every quarter of an RTT, and one every
+two packets for the first 100 packets, to avoid slowing down slow
+start.
+
+% \paragraph{Handshake acknowledgments.} Because QUIC combines the transport and the
+% cryptographic handshake, a server can acknowledge the client's first packet before it
+% has its TLS certificate, an option called instant ACK. In common CDN
+% deployments, the certificate has to be fetched from a backend store, so this choice
+% determines the first RTT sample, from which the initial PTO is
+% derived~\cite{mucke2024reacked}. M{\"u}cke et al.\ found that Cloudflare uses instant ACK
+% for almost all of its domains. It shortens the initial PTO by three times the delay to
+% the certificate store and speeds up recovery from losses during the handshake, but
+% when that delay is high, it causes spurious retransmissions.
+
+% \paragraph{Connection migration.} A QUIC connection can migrate to a new address, for
+% example after a handover, without a new handshake. Chen et al.\ found that migration
+% fails in up to 76\% of hard handovers, such as when a client moves from one Wi-Fi
+% network to another, because QUIC starts a migration only passively, based on the
+% timing of delivered data and on its loss detection. QUIC-HOA~\cite{chen2024quichoa} starts the migration
+% actively instead, with a cross-layer design that is aware of the handover; it made
+% migration succeed consistently and reduced the average migration time by up to
+% 98\%.
+
+% \paragraph{Real-time media over datagrams.} QUIC's unreliable DATAGRAM
+% frames~\cite{rfc9221} allow real-time media to be carried inside a QUIC connection,
+% which raises the question of how a media congestion controller interacts with the
+% congestion control of QUIC. Engelbart and Ott implemented RTP over QUIC with GStreamer
+% and quic-go and evaluated different combinations of congestion control algorithms and
+% signaling~\cite{engelbart2021congestion}. In later work, they carried both the media
+% and the data channels of WebRTC, which normally use separate protocols with separate
+% congestion controllers, in a single QUIC connection. The media stream then saw lower
+% latency and jitter, while the bandwidth was shared fairly with the data
+% streams~\cite{engelbart2026quic}.
+
+\paragraph{Stream-aware allocation.} The base QUIC protocol multiplexes many streams in
+one connection, but offers no way to divide the bandwidth of the connection among them
+by priority. PCC Priority~\cite{chen2023pccpriority} adds the priorities of the streams
+to the utility function of PCC, so that the bandwidth of a connection is divided among
+its streams in proportion to their priorities. In ns-3 simulations, it followed the priority
+settings more closely than earlier schemes, allocating bandwidth at a ratio close to
+that of the priorities, while keeping throughput high, latency low and its tolerance to
+loss high. Unlike stream schedulers, which only decide which
+stream sends next, it changes how the congestion control itself partitions the capacity
+of the connection~\cite{rizvi2026cats}.
+
+% CATS~\cite{rizvi2026cats} gives
+% latency-critical messages priority over bulk data within a single TCP connection, using
+% a scheduler and a credit-based shaper. Its author shows that the
+% single in-order sequence space and the shared congestion window of TCP limit the tail
+% latency that such a scheme can achieve, and proposes CATS over QUIC, with independent
+% streams under one coupled congestion control, as the way around these limits.
+
+
+
