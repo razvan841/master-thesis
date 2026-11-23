@@ -1,0 +1,9 @@
+main_cc_algo: cubic
+main_scenario_text: =b1:*1:397:1000000;
+main_start_time: 0
+main_target_time: 30000000
+nb_connections: 1
+data_rate_in_gbps: 0.1
+latency: 25000
+queue_delay_max: 50000
+qlog_dir: sim/qlogs
