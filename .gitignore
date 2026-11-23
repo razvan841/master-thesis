@@ -1,0 +1,82 @@
+# ---------------------------------------------------------------------------
+# LaTeX build output (thesis/)
+# ---------------------------------------------------------------------------
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.log
+*.lot
+*.out
+*.run.xml
+*.synctex.gz
+*.synctex(busy)
+*.toc
+*.xdv
+*.dvi
+*.nav
+*.snm
+*.vrb
+_minted*/
+*.listing
+# Compiled thesis PDF (figures under thesis/images/ are kept)
+/thesis/*.pdf
+
+# ---------------------------------------------------------------------------
+# Experiment data: raw results stay on disk, not in git
+# ---------------------------------------------------------------------------
+/results/
+*.pcap
+*.pcapng
+*.binlog
+# Simulator / picoquic_ct output written to the working directory
+*.qlog
+*.sqlog
+
+# ---------------------------------------------------------------------------
+# Builds outside the picoquic submodule
+# (inside it, picoquic's own .gitignore already ignores picoquic/build/)
+# ---------------------------------------------------------------------------
+/build/
+cmake-build-*/
+CMakeUserPresets.json
+
+# ---------------------------------------------------------------------------
+# Python (testbed runner, analysis)
+# ---------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# ---------------------------------------------------------------------------
+# Ansible and secrets
+# ---------------------------------------------------------------------------
+*.retry
+.vault_pass*
+.env
+*.key
+
+# ---------------------------------------------------------------------------
+# Papers: the repository is public, so downloaded PDFs stay local
+# ---------------------------------------------------------------------------
+/research_docs/**/*.pdf
+
+# ---------------------------------------------------------------------------
+# Editors and OS files
+# ---------------------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
