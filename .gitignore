@@ -29,6 +29,7 @@ _minted*/
 # Experiment data: raw results stay on disk, not in git
 # ---------------------------------------------------------------------------
 /results/
+/logs/
 *.pcap
 *.pcapng
 *.binlog
