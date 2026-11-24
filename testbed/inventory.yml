@@ -1,0 +1,52 @@
+# Thesis testbed: one description of the machines, used by Ansible (site.yml,
+# teardown.yml) and by the experiment runner (runner.py).
+#
+# Management network (SSH, Ansible, runner): 10.10.2.x.
+# Experiment network: direct 1 Gbps links, every endpoint is connected to daisy.
+#
+#   mickey (sender A)  13.37.1.1 --- 13.37.1.254  daisy  13.37.3.254 --- 13.37.3.1  donald (receiver)
+#   minnie (sender B)  13.37.2.1 --- 13.37.2.254 (router)
+#
+# The bottleneck (rate, buffer, delay) is configured on daisy by runner.py
+# before each run, not here.
+
+all:
+  vars:
+    thesis_repo: https://github.com/razvan841/master-thesis.git
+    thesis_version: main            # branch, tag or commit deployed on every host
+    deploy_dir: ~/thesis-deploy     # code + build on every host (separate from your own checkout)
+
+  children:
+    senders:
+      hosts:
+        mickey:
+          ansible_host: 10.10.2.37
+          exp_dev: enp101s0f3       # link to daisy
+          exp_ip: 13.37.1.1
+          router_ip: 13.37.1.254    # daisy's end of the link
+          exp_routes: [13.37.3.0/24]
+        minnie:
+          ansible_host: 10.10.2.36
+          exp_dev: enp101s0f3
+          exp_ip: 13.37.2.1
+          router_ip: 13.37.2.254
+          exp_routes: [13.37.3.0/24]
+
+    router:
+      hosts:
+        daisy:
+          ansible_host: 10.10.2.5
+          router_links:
+            - { dev: enp101s0f1, ip: 13.37.1.254, peer: mickey }
+            - { dev: enp101s0f2, ip: 13.37.2.254, peer: minnie }
+            - { dev: enp101s0f3, ip: 13.37.3.254, peer: donald }
+
+    receiver:
+      hosts:
+        donald:
+          ansible_host: 10.10.2.22
+          ansible_connection: local # Ansible and runner.py run on donald
+          exp_dev: enp101s0f3
+          exp_ip: 13.37.3.1
+          router_ip: 13.37.3.254
+          exp_routes: [13.37.1.0/24, 13.37.2.0/24]

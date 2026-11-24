@@ -1,0 +1,187 @@
+# Set up the thesis testbed. Run on donald, from this folder:
+#
+#   ansible-playbook site.yml -K              (-K asks for your sudo password once)
+#   ansible-playbook site.yml -K -e thesis_version=<commit>
+#
+# What it does, on every host unless noted:
+#   1. installs build tools and network utilities (apt)
+#   2. checks out the thesis repo at thesis_version (picoquic follows through the
+#      submodule) into deploy_dir, and builds it if the version changed
+#   3. lets the runner use tc, tcpdump and pkill with "sudo -n" (sudoers file)
+#   4. runtime tuning: larger UDP socket buffers, performance CPU governor
+#   5. experiment network: addresses, routes, offloads off; IP forwarding on daisy
+#   6. checks that the senders reach the receiver through daisy
+#
+# Everything in steps 4-5 is runtime only: a reboot undoes it, and running the
+# playbook again restores it. teardown.yml undoes steps 3 and 5 without a reboot.
+
+- name: System packages
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Install build tools and testbed utilities
+      ansible.builtin.apt:
+        name:
+          - build-essential
+          - cmake
+          - pkg-config
+          - libssl-dev
+          - git
+          - ethtool
+          - iproute2
+          - iptables
+          - tcpdump
+          - iputils-ping
+          - python3-yaml
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+- name: Code at the chosen version, built on every host
+  hosts: all
+  become: false
+  gather_facts: true
+  tasks:
+    - name: Remember the login user (for the sudoers file)
+      ansible.builtin.set_fact:
+        testbed_user: "{{ ansible_user_id }}"
+
+    - name: Check out the thesis repo at {{ thesis_version }} (picoquic at the commit it records)
+      ansible.builtin.git:
+        repo: "{{ thesis_repo }}"
+        dest: "{{ deploy_dir }}"
+        version: "{{ thesis_version }}"
+        recursive: true
+      register: repo
+
+    - name: Is the code already built?
+      ansible.builtin.stat:
+        path: "{{ deploy_dir }}/build/wip_server"
+      register: built
+
+    - name: Build picoquic, wip_server, wip_client and pico_sim (logs in deploy_dir/build/*.log)
+      ansible.builtin.shell: |
+        set -e
+        mkdir -p build
+        cmake -S apps -B build -DCMAKE_BUILD_TYPE=Release -DPICOQUIC_FETCH_PTLS=ON > build/configure.log 2>&1
+        cmake --build build -j "$(nproc)" > build/build.log 2>&1
+      args:
+        chdir: "{{ deploy_dir }}"
+      when: repo.changed or not built.stat.exists
+
+    - name: Deployed version
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }} runs {{ repo.after[:12] }}"
+
+- name: Sudo rules for the experiment runner
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Find tc, tcpdump and pkill
+      ansible.builtin.shell: for t in tc tcpdump pkill; do command -v "$t"; done
+      register: tool_paths
+      changed_when: false
+
+    - name: Allow {{ testbed_user }} to run them with "sudo -n" (no password prompt)
+      ansible.builtin.copy:
+        dest: /etc/sudoers.d/thesis-testbed
+        mode: "0440"
+        content: |
+          # Thesis testbed: commands runner.py needs without a password. Removed by teardown.yml.
+          {{ testbed_user }} ALL=(root) NOPASSWD: {{ tool_paths.stdout_lines | join(', ') }}
+        validate: /usr/sbin/visudo -cf %s
+
+- name: Host tuning (runtime only)
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Larger UDP socket buffers (picoquic's -B option can then use them)
+      ansible.builtin.command: >
+        sysctl -w net.core.rmem_max=33554432 net.core.wmem_max=33554432
+      changed_when: false
+
+    - name: Performance CPU governor, where the machine has one
+      ansible.builtin.shell: |
+        for g in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+          [ -w "$g" ] && echo performance > "$g"
+        done
+        true
+      changed_when: false
+
+- name: Experiment network on the senders and the receiver
+  hosts: senders:receiver
+  become: true
+  gather_facts: false
+  tasks:
+    - name: "{{ exp_dev }} up, offloads off"
+      ansible.builtin.shell: |
+        ip link set dev {{ exp_dev }} up
+        for f in gro gso tso lro; do ethtool -K {{ exp_dev }} $f off 2>/dev/null || true; done
+      changed_when: false
+
+    - name: Address {{ exp_ip }}/24 on {{ exp_dev }}
+      ansible.builtin.shell: |
+        if ip -o -4 addr show dev {{ exp_dev }} | grep -qw "{{ exp_ip }}"; then
+          echo present
+        else
+          ip addr add {{ exp_ip }}/24 dev {{ exp_dev }} && echo added
+        fi
+      register: address
+      changed_when: "'added' in address.stdout"
+
+    - name: Routes to the other experiment subnets, through daisy
+      ansible.builtin.command: ip route replace {{ item }} via {{ router_ip }} dev {{ exp_dev }}
+      loop: "{{ exp_routes }}"
+      changed_when: false
+
+- name: Experiment network on the router
+  hosts: router
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Kernel modules for the emulated bottleneck
+      ansible.builtin.command: modprobe {{ item }}
+      loop: [sch_htb, sch_netem]
+      changed_when: false
+
+    - name: Save the original IP forwarding setting, once (teardown.yml restores it)
+      ansible.builtin.shell: |
+        mkdir -p /var/tmp/thesis-testbed
+        [ -f /var/tmp/thesis-testbed/ip_forward.orig ] || sysctl -n net.ipv4.ip_forward > /var/tmp/thesis-testbed/ip_forward.orig
+      changed_when: false
+
+    - name: Forward packets between the experiment links
+      ansible.builtin.shell: |
+        sysctl -w net.ipv4.ip_forward=1
+        iptables -t filter -P FORWARD ACCEPT
+      changed_when: false
+
+    - name: Links up, offloads off
+      ansible.builtin.shell: |
+        ip link set dev {{ item.dev }} up
+        for f in gro gso tso lro; do ethtool -K {{ item.dev }} $f off 2>/dev/null || true; done
+      loop: "{{ router_links }}"
+      changed_when: false
+
+    - name: Addresses on the links
+      ansible.builtin.shell: |
+        if ip -o -4 addr show dev {{ item.dev }} | grep -qw "{{ item.ip }}"; then
+          echo present
+        else
+          ip addr add {{ item.ip }}/24 dev {{ item.dev }} && echo added
+        fi
+      loop: "{{ router_links }}"
+      register: router_addresses
+      changed_when: "'added' in router_addresses.stdout"
+
+- name: Check the experiment network
+  hosts: senders
+  become: false
+  gather_facts: false
+  tasks:
+    - name: Ping the receiver through daisy
+      ansible.builtin.command: ping -c 3 -W 1 {{ hostvars[groups['receiver'][0]].exp_ip }}
+      changed_when: false

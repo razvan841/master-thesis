@@ -1,0 +1,32 @@
+# Cold-start FCT of the baseline algorithms and wip on one network configuration.
+#   python3 runner.py run campaigns/cold_start.yml
+# 4 algorithms x 10 repetitions = 40 runs of 8 sizes x 5 requests each.
+
+name: cold_start_100M_50ms_1bdp
+sender: mickey
+
+network:
+  rate_mbit: 100
+  rtt_ms: 50
+  buffer_bdp: 1.0
+
+algorithms: [newreno, cubic, bbr, wip]
+repetitions: 10
+seed: 1               # fixes the random order of the algorithms in each block
+
+workload:
+  sizes: [10000, 50000, 100000, 250000, 500000, 1000000, 2000000, 5000000]
+  repeat: 5
+  per_cnx: 1
+  gap_ms: 1000
+
+logging:
+  sample_us: 5000
+  pcap: true
+  qlog: false
+
+pinning:
+  server_cpu: 2       # taskset core for wip_server on the sender
+  client_cpu: 2       # taskset core for wip_client on the receiver
+
+cooldown_s: 5

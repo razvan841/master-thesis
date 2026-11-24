@@ -1,0 +1,24 @@
+# Quick end-to-end check of the testbed: 2 algorithms x 1 repetition, a few requests.
+#   python3 runner.py run campaigns/smoke.yml
+
+name: smoke
+sender: mickey
+
+network:
+  rate_mbit: 100      # bottleneck rate on daisy -> donald
+  rtt_ms: 50          # added RTT (netem on daisy, on the way back to the senders)
+  buffer_bdp: 1.0     # drop-tail buffer, in multiples of the bandwidth-delay product
+
+algorithms: [cubic, wip]
+repetitions: 1
+
+workload:
+  sizes: [10000, 100000, 1000000]   # bytes; each request is GET /<size>
+  repeat: 2           # each size this many times per run
+  per_cnx: 1          # 1 = every request on a new connection (cold start)
+  gap_ms: 500         # idle time between connections, so the queue drains
+
+logging:
+  sample_us: 5000     # wip_server --cc-log sampling interval
+  pcap: true          # tcpdump on daisy, before and after the bottleneck
+  qlog: false         # qlogs are detailed but large

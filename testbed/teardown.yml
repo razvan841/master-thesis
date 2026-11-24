@@ -1,0 +1,55 @@
+# Undo the testbed configuration of site.yml without a reboot:
+#
+#   ansible-playbook teardown.yml -K
+#
+# Removes the bottleneck qdiscs, experiment routes and addresses, the sudoers
+# file, and restores IP forwarding on daisy. The deployed code (deploy_dir) and
+# the installed packages stay. Offloads, socket buffer sizes and the CPU
+# governor go back to their defaults at the next reboot.
+
+- name: Router
+  hosts: router
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Remove the bottleneck and delay qdiscs
+      ansible.builtin.shell: tc qdisc del dev {{ item.dev }} root 2>/dev/null || true
+      loop: "{{ router_links }}"
+      changed_when: false
+
+    - name: Remove the link addresses
+      ansible.builtin.shell: ip addr del {{ item.ip }}/24 dev {{ item.dev }} 2>/dev/null || true
+      loop: "{{ router_links }}"
+      changed_when: false
+
+    - name: Restore the original IP forwarding setting
+      ansible.builtin.shell: |
+        if [ -f /var/tmp/thesis-testbed/ip_forward.orig ]; then
+          sysctl -w net.ipv4.ip_forward="$(cat /var/tmp/thesis-testbed/ip_forward.orig)"
+          rm -rf /var/tmp/thesis-testbed
+        fi
+      changed_when: false
+
+- name: Senders and receiver
+  hosts: senders:receiver
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Remove the routes through daisy
+      ansible.builtin.shell: ip route del {{ item }} via {{ router_ip }} dev {{ exp_dev }} 2>/dev/null || true
+      loop: "{{ exp_routes }}"
+      changed_when: false
+
+    - name: Remove the experiment address
+      ansible.builtin.shell: ip addr del {{ exp_ip }}/24 dev {{ exp_dev }} 2>/dev/null || true
+      changed_when: false
+
+- name: Sudo rules
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Remove the runner's sudoers file
+      ansible.builtin.file:
+        path: /etc/sudoers.d/thesis-testbed
+        state: absent
